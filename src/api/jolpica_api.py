@@ -16,9 +16,14 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 def get_data(endpoint, params=None, use_cache=True):
 
     # Add enpoint onto base url
-    url = f"{BASE_URL}{endpoint}"
+    url = f"{BASE_URL}{endpoint}.json"
 
-    cache_file = CACHE_DIR / f"{endpoint.replace('/', '_')}"
+    # Extract parameters
+    limit = params.get("limit")
+    offset = params.get("offset")
+
+    # Cache file name
+    cache_file = CACHE_DIR / f"{endpoint.replace('/', '_')}_{limit}_{offset}.json"
 
     # Make API call
     try:
@@ -40,7 +45,11 @@ def cache_data(cache_file, data):
         json.dump(data, f)
 
 def main():
-    print(get_data("constructors.json", {"limit": 10, "offset": 0}))
+    data = get_data("constructors", {"limit": 10, "offset": 0})
+    for key in data:
+        for x in data[key]:
+            print(x)
+        #print(key, ":", data[key])
 
 if __name__ == "__main__":
     main()
