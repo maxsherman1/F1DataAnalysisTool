@@ -14,13 +14,19 @@ def get_data(endpoint, params=None):
     url = f"{BASE_URL}{endpoint}"
 
     # Make API call
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    data = response.json()
-    return data
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        return data
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error retrieving data: \n{e}")
+        return "Exception request"
+
 
 def main():
-    print(get_data("constructors.json", {"limit": 100, "offset": 0}))
+    print(get_data("constructor.json", {"limit": 1, "offset": 0}))
 
 if __name__ == "__main__":
     main()
