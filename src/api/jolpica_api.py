@@ -13,7 +13,7 @@ BASE_URL = "https://api.jolpi.ca/ergast/f1/"
 CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "data/cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-def get_data(endpoint, params=None, use_cache=True):
+def get_data(endpoint, params={"limit": 30, "offset": 0}, use_cache=True):
     """
     Retrieves data from the Jolpica-F1 API with optional caching.
 
@@ -27,11 +27,11 @@ def get_data(endpoint, params=None, use_cache=True):
     offset = params.get("offset")
 
     # Cache file name
-    file_name = f"{endpoint.replace('/', '_')}_{limit}_{offset}.json"
+    cache_file = f"{endpoint.replace('/', '_')}_{limit}_{offset}.json"
 
     # return cache file if file is found in cache folder
-    if file_name in os.listdir(CACHE_DIR):
-        return load_cache(file_name)
+    if cache_file in os.listdir(CACHE_DIR):
+        return load_cache(cache_file)
 
     # Add enpoint to the base url
     url = f"{BASE_URL}{endpoint}"
@@ -46,7 +46,7 @@ def get_data(endpoint, params=None, use_cache=True):
 
         # Save data to cache file if cache is enabled
         if use_cache:
-            cache_data(file_name, data)
+            cache_data(cache_file, data)
 
         # Return the response in JSON format
         return data
@@ -59,14 +59,16 @@ def get_data(endpoint, params=None, use_cache=True):
 # Retrieve all data from endpoint using pagination
 def get_all_data(endpoint, use_cache=True):
 
+    # return cache file if file is found in cache folder
+    cache_file = f"{endpoint.replace('/', '_')}_all.json"
+    if cache_file in os.listdir(CACHE_DIR):
+        return load_cache(cache_file)
+
     # Initiate variables
-    limit = 0
-    offset = 0
-    params = {"limit": limit, "offset": offset}
     all_data = {}
 
     # Retrieve initial data
-    data = get_data(endpoint, params, False)
+    data = get_data(endpoint, use_cache=False)
 
     # Retrieve total number of datapoints if there are no errors during data retrieval
     if data == "Exception request":
@@ -131,7 +133,6 @@ def get_all_data(endpoint, use_cache=True):
 
     # Cache data if cache is enabled
     if use_cache:
-        cache_file = f"{endpoint.replace('/', '_')}_all.json"
         cache_data(cache_file, all_data)
 
     # Return the paginated data
@@ -152,8 +153,8 @@ def load_cache(file_name):
         return json.load(f)
 
 def main():
-    print(get_all_data("constructors"))
-    print(get_all_data("drivers"))
+    get_all_data("constructors")
+    get_all_data("drivers")
 
 if __name__ == "__main__":
     main()
