@@ -56,30 +56,37 @@ def get_data(endpoint, params={"limit": 30, "offset": 0}, use_cache=True):
         logging.error(f"Error retrieving data: \n{e}")
         return "Exception request"
 
-
+# Retrieve all data from endpoint using pagination
 def get_all_data(endpoint, use_cache=True):
+
+    # Initiate variables
     limit = 0
     offset = 0
     params = {"limit": limit, "offset": offset}
     all_data = {}
 
+    # Retrieve initial data
     data = get_data(endpoint, params, False)
 
-    if data != "Exception request":
-        total = int(data.get("MRData").get("total"))
-    else:
+    # Retrieve total number of datapoints if there are no errors during data retrieval
+    if data == "Exception request":
         total = "error"
+    else:
+        total = int(data.get("MRData").get("total"))
 
+    # If number of datapoints is less than the maximum limit of 100, no pagination is necessary
     if total <= 100:
         limit = 100
         offset = 0
         params = {"limit": limit, "offset": offset}
         all_data = get_data(endpoint, params, False)
 
+    # Cache data if cach is enables
     if use_cache:
         cache_file = f"{endpoint.replace('/', '_')}_all.json"
         cache_data(cache_file, all_data)
 
+    # Return the paginated data
     return all_data
 
 # Cache data function (does not check if cache folder is present)
