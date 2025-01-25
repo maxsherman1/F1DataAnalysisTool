@@ -80,8 +80,11 @@ def get_all_data(endpoint, use_cache=True):
         offset = 0
         params = {"limit": limit, "offset": offset}
         all_data = get_data(endpoint, params, False)
+    elif total == "error":
+        use_cache = False
+        all_data = data
 
-    # Cache data if cach is enables
+    # Cache data if cache is enabled
     if use_cache:
         cache_file = f"{endpoint.replace('/', '_')}_all.json"
         cache_data(cache_file, all_data)
