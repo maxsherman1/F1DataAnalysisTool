@@ -115,7 +115,7 @@ def get_all_data(endpoint, use_cache=True):
         while offset < total:
             params = {"limit": limit, "offset": offset}
             paginated_data = get_data(endpoint, params, False)
-            logging.info(f"Received data with limit {limit} and offset {offset}")
+            # logging.info(f"Received data with limit {limit} and offset {offset}")
 
             if paginated_data == "Exception request":
                 logging.error("An error occurred while fetching paginated data.")
@@ -128,7 +128,7 @@ def get_all_data(endpoint, use_cache=True):
             )
 
             all_data["MRData"][dynamic_key][inner_key].extend(paginated_dynamic_data)
-            logging.info(f"Appended {len(paginated_dynamic_data)} items from offset {offset}")
+            # logging.info(f"Appended {len(paginated_dynamic_data)} items from offset {offset}")
             offset += limit
 
     # Cache data if cache is enabled
@@ -152,9 +152,172 @@ def load_cache(file_name):
         logging.info(f"Data loaded from {file_name} successfully.")
         return json.load(f)
 
+def get_circuits():
+    return get_all_data("circuits")
+
+def get_constructors():
+    return get_all_data("constructors")
+
+def get_constructor_standings(season: str):
+    endpoint = f"{season}/constructorstandings"
+    return get_all_data(endpoint)
+
+def get_drivers():
+    return get_all_data("drivers")
+
+
+def get_driver_standings(season: str):
+    endpoint = f"{season}/driverstandings"
+    return get_all_data(endpoint)
+
+
+def get_laps(season: str, round_number: int):
+    endpoint = f"{season}/{round_number}/laps"
+    return get_all_data(endpoint)
+
+
+def get_pitstops(season: str, round_number: int):
+    endpoint = f"{season}/{round_number}/pitstops"
+    return get_all_data(endpoint)
+
+
+def get_qualifying(season: str, round_number: int):
+    endpoint = f"{season}/{round_number}/qualifying"
+    return get_all_data(endpoint)
+
+
+def get_races():
+    return get_all_data("races")
+
+
+def get_results(season: str, round_number: int):
+    endpoint = f"{season}/{round_number}/results"
+    return get_all_data(endpoint)
+
+
+def get_seasons():
+    return get_all_data("seasons")
+
+
+def get_sprint():
+    return get_all_data("sprint")
+
+
+def get_status():
+    return get_all_data("status")
+
+
 def main():
-    get_all_data("constructors")
-    get_all_data("drivers")
+    # Example to retrieve all constructors
+    try:
+        # Example for a specific season (e.g., 2023)
+        season = "2023"
+        round_number = 1  # Example round for the 2023 season
+
+        # Get all circuits
+        logging.info("Retrieving circuits data...")
+        all_circuits = get_circuits()
+        total = all_circuits.get("MRData").get("total")
+        logging.info(f"Retrieved {total} circuits.") if all_circuits else logging.error(
+            "Failed to retrieve circuits data.")
+
+        # Get all constructors
+        logging.info("Retrieving constructors data...")
+        all_constructors = get_constructors()
+        total = all_constructors.get("MRData").get("total")
+        logging.info(
+            f"Retrieved {total} constructors.") if all_constructors else logging.error(
+            "Failed to retrieve constructors data.")
+
+        # Get constructor standings for a given season
+        logging.info(f"Retrieving constructor standings for {season}...")
+        constructor_standings = get_constructor_standings(season)
+        total = constructor_standings.get("MRData").get("total")
+        logging.info(
+            f"Retrieved {total} constructor standings.") if constructor_standings else logging.error(
+            f"Failed to retrieve constructor standings for {season}.")
+
+        # Get all drivers
+        logging.info("Retrieving drivers data...")
+        all_drivers = get_drivers()
+        total = all_drivers.get("MRData").get("total")
+        logging.info(f"Retrieved {total} drivers.") if all_drivers else logging.error(
+            "Failed to retrieve driver data.")
+
+        # Get driver standings for a given season
+        logging.info(f"Retrieving driver standings for {season}...")
+        driver_standings = get_driver_standings(season)
+        total = driver_standings.get("MRData").get("total")
+        logging.info(
+            f"Retrieved {total} driver standings.") if driver_standings else logging.error(
+            f"Failed to retrieve driver standings for {season}.")
+
+        # Get lap data for a specific season and round
+        logging.info(f"Retrieving lap data for {season} round {round_number}...")
+        laps = get_laps(season, round_number)
+        total = laps.get("MRData").get("total")
+        logging.info(
+            f"Retrieved {total} laps for {season} round {round_number}.") if laps else logging.error(
+            f"Failed to retrieve lap data for {season} round {round_number}.")
+
+        # Get pitstop data for a specific season and round
+        logging.info(f"Retrieving pitstops data for {season} round {round_number}...")
+        pitstops = get_pitstops(season, round_number)
+        total = pitstops.get("MRData").get("total")
+        logging.info(
+            f"Retrieved {total} pitstops for {season} round {round_number}.") if pitstops else logging.error(
+            f"Failed to retrieve pitstops data for {season} round {round_number}.")
+
+        # Get qualifying data for a specific season and round
+        logging.info(f"Retrieving qualifying data for {season} round {round_number}...")
+        qualifying = get_qualifying(season, round_number)
+        total = qualifying.get("MRData").get("total")
+        logging.info(
+            f"Retrieved {total} qualifying results for {season} round {round_number}.") if qualifying else logging.error(
+            f"Failed to retrieve qualifying data for {season} round {round_number}.")
+
+        # Get all races
+        logging.info("Retrieving races data...")
+        all_races = get_races()
+        total = all_races.get("MRData").get("total")
+        logging.info(f"Retrieved {total} races.") if all_races else logging.error(
+            "Failed to retrieve races data.")
+
+        # Get results for a specific round
+        logging.info(f"Retrieving results for {season} round {round_number}...")
+        results = get_results(season, round_number)
+        total = results.get("MRData").get("total")
+        logging.info(
+            f"Retrieved {total} results for {season} round {round_number}.") if results else logging.error(
+            f"Failed to retrieve results for {season} round {round_number}.")
+
+        # Get all seasons
+        logging.info("Retrieving seasons data...")
+        all_seasons = get_seasons()
+        total = all_seasons.get("MRData").get("total")
+        logging.info(f"Retrieved {total} seasons.") if all_seasons else logging.error(
+            "Failed to retrieve seasons data.")
+
+        # Get sprint data for a specific season and round
+        logging.info(f"Retrieving sprint data...")
+        sprint = get_sprint()
+        total = sprint.get("MRData").get("total")
+        logging.info(
+            f"Retrieved {total} sprint results.") if sprint else logging.error(
+            f"Failed to retrieve sprint data.")
+
+        # Get status data
+        logging.info("Retrieving status data...")
+        status = get_status()
+        total = status.get("MRData").get("total")
+        logging.info(f"Retrieved {total} status entries.") if status else logging.error(
+            "Failed to retrieve status data.")
+
+        logging.info("All data retrieval completed.")
+
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+
 
 if __name__ == "__main__":
     main()
