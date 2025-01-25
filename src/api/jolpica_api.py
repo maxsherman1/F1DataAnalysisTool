@@ -13,7 +13,7 @@ BASE_URL = "https://api.jolpi.ca/ergast/f1/"
 CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "data/cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-def get_data(endpoint, params={"limit": 30, "offset": 0}, use_cache=True):
+def get_data(endpoint, params=None, use_cache=True):
     """
     Retrieves data from the Jolpica-F1 API with optional caching.
 
@@ -70,19 +70,64 @@ def get_all_data(endpoint, use_cache=True):
 
     # Retrieve total number of datapoints if there are no errors during data retrieval
     if data == "Exception request":
-        total = "error"
+        return data
     else:
         total = int(data.get("MRData").get("total"))
 
     # If number of datapoints is less than the maximum limit of 100, no pagination is necessary
     if total <= 100:
-        limit = 100
+        limit = total
         offset = 0
         params = {"limit": limit, "offset": offset}
         all_data = get_data(endpoint, params, False)
-    elif total == "error":
-        use_cache = False
+
+    # If there is more datapoints than the limit, a loop will paginate through the API endpoint
+    elif total > 100:
+        limit = 100
+        offset = 0
         all_data = data
+        dynamic_key = None
+
+        for key in data.get("MRData").keys():
+            if key not in ["xmlns", "series", "url", "limit", "offset", "total"]:
+                dynamic_key = key
+                break
+
+        if not dynamic_key:
+            logging.error("Unable to identify dynamic key")
+            return "Error: unable to process data structure"
+
+        inner_key = None
+        dynamic_value = data["MRData"].get(dynamic_key)
+        if isinstance(dynamic_value, dict):
+            for key in dynamic_value.keys():
+                inner_key = key
+                break
+
+        if not inner_key:
+            logging.error("Unable to find inner key in dynamic key")
+            return "Error: unable to find inner key"
+
+        all_data["MRData"][dynamic_key][inner_key] = []
+
+        while offset < total:
+            params = {"limit": limit, "offset": offset}
+            paginated_data = get_data(endpoint, params, False)
+            logging.info(f"Received data with limit {limit} and offset {offset}")
+
+            if paginated_data == "Exception request":
+                logging.error("An error occurred while fetching paginated data.")
+                break
+
+            paginated_dynamic_data = (
+                paginated_data.get("MRData").
+                get(dynamic_key).
+                get(inner_key)
+            )
+
+            all_data["MRData"][dynamic_key][inner_key].extend(paginated_dynamic_data)
+            logging.info(f"Appended {len(paginated_dynamic_data)} items from offset {offset}")
+            offset += limit
 
     # Cache data if cache is enabled
     if use_cache:
@@ -107,15 +152,8 @@ def load_cache(file_name):
         return json.load(f)
 
 def main():
-    data = get_data("constructors")
-    #for key in data:
-    #    for x in data[key]:
-    #        print(x)
-        #print(key, ":", data[key])
-    #print(type(data.get("MRData").get("total")))
-    print(get_all_data("circuits/bahrain/constructors"))
-
-
+    print(get_all_data("constructors"))
+    print(get_all_data("drivers"))
 
 if __name__ == "__main__":
     main()
