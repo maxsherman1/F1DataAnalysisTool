@@ -57,6 +57,27 @@ def get_data(endpoint, params={"limit": 30, "offset": 0}, use_cache=True):
         return "Exception request"
 
 
+def get_all_data(endpoint, use_cache=True):
+    limit = 0
+    offset = 0
+    params = {"limit": limit, "offset": offset}
+    all_data = {}
+
+    data = get_data(endpoint, params, False)
+
+    if data != "Exception request":
+        total = int(data.get("MRData").get("total"))
+    else:
+        total = "error"
+
+    if total <= 100:
+        limit = 100
+        offset = 0
+        params = {"limit": limit, "offset": offset}
+        all_data = get_data(endpoint, params, False)
+
+    return all_data
+
 # Cache data function (does not check if cache folder is present)
 def cache_data(file_name, data):
     cache_file = f"{CACHE_DIR}/{file_name}"
@@ -77,8 +98,10 @@ def main():
     #    for x in data[key]:
     #        print(x)
         #print(key, ":", data[key])
-    #print(data.get("MRData").get("total"))
-    #print(get_all_data("constructors"))
+    #print(type(data.get("MRData").get("total")))
+    print(get_all_data("circuits/bahrain/constructors"))
+
+
 
 if __name__ == "__main__":
     main()
