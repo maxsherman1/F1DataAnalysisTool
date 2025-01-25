@@ -76,6 +76,10 @@ def get_all_data(endpoint, use_cache=True):
         params = {"limit": limit, "offset": offset}
         all_data = get_data(endpoint, params, False)
 
+    if use_cache:
+        cache_file = f"{endpoint.replace('/', '_')}_all.json"
+        cache_data(cache_file, all_data)
+
     return all_data
 
 # Cache data function (does not check if cache folder is present)
