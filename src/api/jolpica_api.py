@@ -152,75 +152,79 @@ def load_cache(file_name):
         logging.info(f"Data loaded from {file_name} successfully.")
         return json.load(f)
 
-def get_resource(
-        resource_type: str,
-        season: str = None,
-        round: str = None,
-        circuit_id: str = None,
-        constructor_id: str = None,
-        driver_id: str = None,
-        fastest_lap_rank: str = None,
-        grid_position: str = None,
-        finish_position: str = None,
-        status_id: str = None,
-        lap_number: str = None,
-        stop_number: str = None,
-        position: str = None
-):
-    """
-    Retrieves data for any F1 resource dynamically based on provided route parameters.
+# Retrieves resource data dynamically based on filters
+def get_resource(resource_type, **filters):
+    endpoint = build_endpoint(resource_type, **filters)
+    return get_all_data(endpoint)
 
-    :param resource_type: The resource type (e.g., circuits, constructors, drivers, results, seasons, etc.).
-    :param season: Filters data for a specific season (e.g., "2024").
-    :param round: Filters data for a specific round of the season.
-    :param circuit_id: Filters data for a specific circuit by ID.
-    :param constructor_id: Filters data for a specific constructor by ID.
-    :param driver_id: Filters data for a specific driver by ID.
-    :param fastest_lap_rank: Filters data for a specific fastest lap rank.
-    :param grid_position: Filters data for a specific grid position.
-    :param finish_position: Filters data for a specific finishing position.
-    :param status_id: Filters data for a specific status ID.
-    :param lap_number: Filters data for a specific lap number.
-    :param stop_number: Filters data for a specific stop number in a race.
-    :param position: Filters data for a specific position (e.g., standings).
-    :return: JSON response containing the requested resource data.
-    """
+# Builds the endpoint URL dynamically based on filters
+def build_endpoint(resource_type, **filters):
     endpoint_parts = []
 
-    # Add season and round to the endpoint if provided
-    if season:
-        endpoint_parts.append(season)
-        if round:
-            endpoint_parts.append(round)
+    # Add season and round first
+    if filters.get("season"):
+        endpoint_parts.append(filters["season"])
+        if filters.get("round"):
+            endpoint_parts.append(filters["round"])
 
-    # Add specific filters based on parameters
-    if circuit_id:
-        endpoint_parts.extend(["circuits", circuit_id])
-    if constructor_id:
-        endpoint_parts.extend(["constructors", constructor_id])
-    if driver_id:
-        endpoint_parts.extend(["drivers", driver_id])
-    if fastest_lap_rank:
-        endpoint_parts.extend(["fastest", fastest_lap_rank])
-    if grid_position:
-        endpoint_parts.extend(["grid", grid_position])
-    if finish_position:
-        endpoint_parts.extend(["results", finish_position])
-    if status_id:
-        endpoint_parts.extend(["status", status_id])
-    if lap_number:
-        endpoint_parts.extend(["laps", lap_number])
-    if stop_number:
-        endpoint_parts.extend(["pitstops", stop_number])
-    if position:
-        endpoint_parts.append(position)
+    # Add other filters dynamically
+    for key, value in filters.items():
+        if key not in ["season", "round", "position"] and value:
+            endpoint_parts.extend([key.replace("_id", ""), value])
 
-    # Append the resource type at the end if no ID is provided
+    # Append resource type at the end if not already added
     if resource_type not in endpoint_parts:
         endpoint_parts.append(resource_type)
 
-    # Construct the endpoint URL
-    endpoint = "/".join(endpoint_parts)
+    if filters.get("position"):
+        endpoint_parts.append(filters["position"])
 
-    # Call the get_all_data function with the constructed endpoint
-    return get_all_data(endpoint)
+    return "/".join(endpoint_parts)
+
+def main():
+    # Example 1: Get all circuits for the 2024 season
+    circuits_2024 = get_resource(resource_type="circuits", season="2024")
+    print(f"Example 1: {circuits_2024}")
+
+    # Example 2: Get constructors for the first round of 2024
+    constructors_round_1 = get_resource(resource_type="constructors", season="2024", round="1")
+    print(f"Example 2: {constructors_round_1}")
+
+    # Example 3: Get lap data for the 10th lap of the 2023 Monaco Grand Prix
+    laps_monaco = get_resource(resource_type="laps", season="2023", round="6", laps="10")
+    print(f"Example 3: {laps_monaco}")
+
+    # Example 4: Get pitstops for the 4th stop of the 2019 Azerbaijan Grand Prix
+    pitstops_azerbaijan = get_resource(resource_type="pitstops", season="2019", round="4", pitstops="4")
+    print(f"Example 4: {pitstops_azerbaijan}")
+
+    # Example 5: Get driver standings for the 2024 season
+    driver_standings_2024 = get_resource(resource_type="driverstandings", season="2024")
+    print(f"Example 5: {driver_standings_2024}")
+
+    # Example 6: Get results for Max Verstappen in the 2021 season
+    verstappen_results = get_resource(resource_type="results", season="2021", drivers_id="max_verstappen")
+    print(f"Example 6: {verstappen_results}")
+
+    # Example 7: Combine filters to get specific qualifying results
+    qualifying_results = get_resource(
+        resource_type="qualifying",
+        season="2024",
+        round="17",
+        circuits_id="baku",
+        drivers_id="leclerc"
+    )
+    print(f"Example 7: {qualifying_results}")
+
+    # Example 8: Get constructors in position 1 for the 2020 season
+    constructor_position_1 = get_resource(resource_type="constructorstandings", season="2020", position="1")
+    print(f"Example 8: {constructor_position_1}")
+
+    # Example 9: Get seasons featuring a specific status ID (e.g., statusId=2)
+    seasons_status_2 = get_resource(resource_type="seasons", status_id="2")
+    print(f"Example 9: {seasons_status_2}")
+
+
+
+if __name__ == "__main__":
+    main()
