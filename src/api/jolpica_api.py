@@ -152,158 +152,75 @@ def load_cache(file_name):
         logging.info(f"Data loaded from {file_name} successfully.")
         return json.load(f)
 
-def get_circuits(
-    season: str = None,
-    round: str = None,
-    circuit_id: str = None,
-    constructor_id: str = None,
-    driver_id: str = None,
-    fastest_lap_rank: str = None,
-    grid_position: str = None,
-    finish_position: str = None,
-    status_id: str = None
+def get_resource(
+        resource_type: str,
+        season: str = None,
+        round: str = None,
+        circuit_id: str = None,
+        constructor_id: str = None,
+        driver_id: str = None,
+        fastest_lap_rank: str = None,
+        grid_position: str = None,
+        finish_position: str = None,
+        status_id: str = None,
+        lap_number: str = None,
+        stop_number: str = None,
+        position: str = None
 ):
+    """
+    Retrieves data for any F1 resource dynamically based on provided route parameters.
+
+    :param resource_type: The resource type (e.g., circuits, constructors, drivers, results, seasons, etc.).
+    :param season: Filters data for a specific season (e.g., "2024").
+    :param round: Filters data for a specific round of the season.
+    :param circuit_id: Filters data for a specific circuit by ID.
+    :param constructor_id: Filters data for a specific constructor by ID.
+    :param driver_id: Filters data for a specific driver by ID.
+    :param fastest_lap_rank: Filters data for a specific fastest lap rank.
+    :param grid_position: Filters data for a specific grid position.
+    :param finish_position: Filters data for a specific finishing position.
+    :param status_id: Filters data for a specific status ID.
+    :param lap_number: Filters data for a specific lap number.
+    :param stop_number: Filters data for a specific stop number in a race.
+    :param position: Filters data for a specific position (e.g., standings).
+    :return: JSON response containing the requested resource data.
+    """
     endpoint_parts = []
+
+    # Add season and round to the endpoint if provided
     if season:
         endpoint_parts.append(season)
         if round:
             endpoint_parts.append(round)
 
+    # Add specific filters based on parameters
     if circuit_id:
         endpoint_parts.extend(["circuits", circuit_id])
-    else:
-        if constructor_id:
-            endpoint_parts.extend(["constructors", constructor_id])
-        if driver_id:
-            endpoint_parts.extend(["drivers", driver_id])
-        if fastest_lap_rank:
-            endpoint_parts.extend(["fastest", fastest_lap_rank])
-        if grid_position:
-            endpoint_parts.extend(["grid", grid_position])
-        if finish_position:
-            endpoint_parts.extend(["results", finish_position])
-        if status_id:
-            endpoint_parts.extend(["status", status_id])
-        endpoint_parts.append("circuits")
+    if constructor_id:
+        endpoint_parts.extend(["constructors", constructor_id])
+    if driver_id:
+        endpoint_parts.extend(["drivers", driver_id])
+    if fastest_lap_rank:
+        endpoint_parts.extend(["fastest", fastest_lap_rank])
+    if grid_position:
+        endpoint_parts.extend(["grid", grid_position])
+    if finish_position:
+        endpoint_parts.extend(["results", finish_position])
+    if status_id:
+        endpoint_parts.extend(["status", status_id])
+    if lap_number:
+        endpoint_parts.extend(["laps", lap_number])
+    if stop_number:
+        endpoint_parts.extend(["pitstops", stop_number])
+    if position:
+        endpoint_parts.append(position)
 
+    # Append the resource type at the end if no ID is provided
+    if resource_type not in endpoint_parts:
+        endpoint_parts.append(resource_type)
+
+    # Construct the endpoint URL
     endpoint = "/".join(endpoint_parts)
+
+    # Call the get_all_data function with the constructed endpoint
     return get_all_data(endpoint)
-
-def get_constructors():
-    return get_all_data("constructors")
-
-def get_constructor_standings(season: str):
-    endpoint = f"{season}/constructorstandings"
-    return get_all_data(endpoint)
-
-def get_drivers():
-    return get_all_data("drivers")
-
-
-def get_driver_standings(season: str):
-    endpoint = f"{season}/driverstandings"
-    return get_all_data(endpoint)
-
-
-def get_laps(season: str, round_number: int):
-    endpoint = f"{season}/{round_number}/laps"
-    return get_all_data(endpoint)
-
-
-def get_pitstops(season: str, round_number: int):
-    endpoint = f"{season}/{round_number}/pitstops"
-    return get_all_data(endpoint)
-
-
-def get_qualifying(season: str, round_number: int):
-    endpoint = f"{season}/{round_number}/qualifying"
-    return get_all_data(endpoint)
-
-
-def get_races():
-    return get_all_data("races")
-
-
-def get_results(season: str, round_number: int):
-    endpoint = f"{season}/{round_number}/results"
-    return get_all_data(endpoint)
-
-
-def get_seasons():
-    return get_all_data("seasons")
-
-
-def get_sprint():
-    return get_all_data("sprint")
-
-
-def get_status():
-    return get_all_data("status")
-
-
-def main():
-    # Example 1: Fetch all circuits for the 2024 season
-    circuits_2024 = get_circuits(season="2024")
-    print(f"Example 1: {circuits_2024}")
-
-    # Example 2: Fetch all circuits for the first round of the 2024 season
-    circuits_round_1 = get_circuits(season="2024", round="1")
-    print(f"Example 2: {circuits_round_1}")
-
-    # Example 3: Fetch details of a specific circuit by circuitId
-    circuit_albert_park = get_circuits(circuit_id="albert_park")
-    print(f"Example 3: {circuit_albert_park}")
-
-    # Example 4: Fetch all circuits a specific constructor has raced at
-    circuits_mercedes = get_circuits(constructor_id="mercedes")
-    print(f"Example 4: {circuits_mercedes}")
-
-    # Example 5: Fetch all circuits a specific driver has raced at
-    circuits_hamilton = get_circuits(driver_id="hamilton")
-    print(f"Example 5: {circuits_hamilton}")
-
-    # Example 6: Fetch circuits where a driver completed a lap ranked at position 24
-    circuits_fastest_24 = get_circuits(fastest_lap_rank="24")
-    print(f"Example 6: {circuits_fastest_24}")
-
-    # Example 7: Fetch circuits where a specific grid position (e.g., 29) was used
-    circuits_grid_29 = get_circuits(grid_position="29")
-    print(f"Example 7: {circuits_grid_29}")
-
-    # Example 8: Fetch circuits where a race finished with a driver in a specific position
-    circuits_results_1 = get_circuits(finish_position="1")
-    print(f"Example 8: {circuits_results_1}")
-
-    # Example 9: Fetch circuits where a race ended with a specific status
-    circuits_status_2 = get_circuits(status_id="2")
-    print(f"Example 9: {circuits_status_2}")
-
-    # Example 10: Combine filters (e.g., circuits for a specific season and round)
-    circuits_season_round = get_circuits(season="2023", round="last")
-    print(f"Example 10: {circuits_season_round}")
-
-    # Example 11: Combine filters (e.g., circuits for a specific driver and constructor)
-    circuits_driver_constructor = get_circuits(driver_id="verstappen", constructor_id="red_bull")
-    print(f"Example 11: {circuits_driver_constructor}")
-
-    # Example 12: Combine filters with status and grid position
-    circuits_status_grid = get_circuits(status_id="1", grid_position="10")
-    print(f"Example 12: {circuits_status_grid}")
-
-    # Example 13: Combine all filters for maximum specificity
-    circuits_all_filters = get_circuits(
-        season="2022",
-        round="5",
-        circuit_id="monaco",
-        constructor_id="ferrari",
-        driver_id="leclerc",
-        fastest_lap_rank="1",
-        grid_position="1",
-        finish_position="1",
-        status_id="1"
-    )
-    print(f"Example 13: {circuits_all_filters}")
-
-
-if __name__ == "__main__":
-    main()
