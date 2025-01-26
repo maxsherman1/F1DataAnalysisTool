@@ -152,8 +152,42 @@ def load_cache(file_name):
         logging.info(f"Data loaded from {file_name} successfully.")
         return json.load(f)
 
-def get_circuits():
-    return get_all_data("circuits")
+def get_circuits(
+    season: str = None,
+    round: str = None,
+    circuit_id: str = None,
+    constructor_id: str = None,
+    driver_id: str = None,
+    fastest_lap_rank: str = None,
+    grid_position: str = None,
+    finish_position: str = None,
+    status_id: str = None
+):
+    endpoint_parts = []
+    if season:
+        endpoint_parts.append(season)
+        if round:
+            endpoint_parts.append(round)
+
+    if circuit_id:
+        endpoint_parts.extend(["circuits", circuit_id])
+    else:
+        if constructor_id:
+            endpoint_parts.extend(["constructors", constructor_id])
+        if driver_id:
+            endpoint_parts.extend(["drivers", driver_id])
+        if fastest_lap_rank:
+            endpoint_parts.extend(["fastest", fastest_lap_rank])
+        if grid_position:
+            endpoint_parts.extend(["grid", grid_position])
+        if finish_position:
+            endpoint_parts.extend(["results", finish_position])
+        if status_id:
+            endpoint_parts.extend(["status", status_id])
+        endpoint_parts.append("circuits")
+
+    endpoint = "/".join(endpoint_parts)
+    return get_all_data(endpoint)
 
 def get_constructors():
     return get_all_data("constructors")
@@ -208,115 +242,67 @@ def get_status():
 
 
 def main():
-    # Example to retrieve all constructors
-    try:
-        # Example for a specific season (e.g., 2023)
-        season = "2023"
-        round_number = 1  # Example round for the 2023 season
+    # Example 1: Fetch all circuits for the 2024 season
+    circuits_2024 = get_circuits(season="2024")
+    print(f"Example 1: {circuits_2024}")
 
-        # Get all circuits
-        logging.info("Retrieving circuits data...")
-        all_circuits = get_circuits()
-        total = all_circuits.get("MRData").get("total")
-        logging.info(f"Retrieved {total} circuits.") if all_circuits else logging.error(
-            "Failed to retrieve circuits data.")
+    # Example 2: Fetch all circuits for the first round of the 2024 season
+    circuits_round_1 = get_circuits(season="2024", round="1")
+    print(f"Example 2: {circuits_round_1}")
 
-        # Get all constructors
-        logging.info("Retrieving constructors data...")
-        all_constructors = get_constructors()
-        total = all_constructors.get("MRData").get("total")
-        logging.info(
-            f"Retrieved {total} constructors.") if all_constructors else logging.error(
-            "Failed to retrieve constructors data.")
+    # Example 3: Fetch details of a specific circuit by circuitId
+    circuit_albert_park = get_circuits(circuit_id="albert_park")
+    print(f"Example 3: {circuit_albert_park}")
 
-        # Get constructor standings for a given season
-        logging.info(f"Retrieving constructor standings for {season}...")
-        constructor_standings = get_constructor_standings(season)
-        total = constructor_standings.get("MRData").get("total")
-        logging.info(
-            f"Retrieved {total} constructor standings.") if constructor_standings else logging.error(
-            f"Failed to retrieve constructor standings for {season}.")
+    # Example 4: Fetch all circuits a specific constructor has raced at
+    circuits_mercedes = get_circuits(constructor_id="mercedes")
+    print(f"Example 4: {circuits_mercedes}")
 
-        # Get all drivers
-        logging.info("Retrieving drivers data...")
-        all_drivers = get_drivers()
-        total = all_drivers.get("MRData").get("total")
-        logging.info(f"Retrieved {total} drivers.") if all_drivers else logging.error(
-            "Failed to retrieve driver data.")
+    # Example 5: Fetch all circuits a specific driver has raced at
+    circuits_hamilton = get_circuits(driver_id="hamilton")
+    print(f"Example 5: {circuits_hamilton}")
 
-        # Get driver standings for a given season
-        logging.info(f"Retrieving driver standings for {season}...")
-        driver_standings = get_driver_standings(season)
-        total = driver_standings.get("MRData").get("total")
-        logging.info(
-            f"Retrieved {total} driver standings.") if driver_standings else logging.error(
-            f"Failed to retrieve driver standings for {season}.")
+    # Example 6: Fetch circuits where a driver completed a lap ranked at position 24
+    circuits_fastest_24 = get_circuits(fastest_lap_rank="24")
+    print(f"Example 6: {circuits_fastest_24}")
 
-        # Get lap data for a specific season and round
-        logging.info(f"Retrieving lap data for {season} round {round_number}...")
-        laps = get_laps(season, round_number)
-        total = laps.get("MRData").get("total")
-        logging.info(
-            f"Retrieved {total} laps for {season} round {round_number}.") if laps else logging.error(
-            f"Failed to retrieve lap data for {season} round {round_number}.")
+    # Example 7: Fetch circuits where a specific grid position (e.g., 29) was used
+    circuits_grid_29 = get_circuits(grid_position="29")
+    print(f"Example 7: {circuits_grid_29}")
 
-        # Get pitstop data for a specific season and round
-        logging.info(f"Retrieving pitstops data for {season} round {round_number}...")
-        pitstops = get_pitstops(season, round_number)
-        total = pitstops.get("MRData").get("total")
-        logging.info(
-            f"Retrieved {total} pitstops for {season} round {round_number}.") if pitstops else logging.error(
-            f"Failed to retrieve pitstops data for {season} round {round_number}.")
+    # Example 8: Fetch circuits where a race finished with a driver in a specific position
+    circuits_results_1 = get_circuits(finish_position="1")
+    print(f"Example 8: {circuits_results_1}")
 
-        # Get qualifying data for a specific season and round
-        logging.info(f"Retrieving qualifying data for {season} round {round_number}...")
-        qualifying = get_qualifying(season, round_number)
-        total = qualifying.get("MRData").get("total")
-        logging.info(
-            f"Retrieved {total} qualifying results for {season} round {round_number}.") if qualifying else logging.error(
-            f"Failed to retrieve qualifying data for {season} round {round_number}.")
+    # Example 9: Fetch circuits where a race ended with a specific status
+    circuits_status_2 = get_circuits(status_id="2")
+    print(f"Example 9: {circuits_status_2}")
 
-        # Get all races
-        logging.info("Retrieving races data...")
-        all_races = get_races()
-        total = all_races.get("MRData").get("total")
-        logging.info(f"Retrieved {total} races.") if all_races else logging.error(
-            "Failed to retrieve races data.")
+    # Example 10: Combine filters (e.g., circuits for a specific season and round)
+    circuits_season_round = get_circuits(season="2023", round="last")
+    print(f"Example 10: {circuits_season_round}")
 
-        # Get results for a specific round
-        logging.info(f"Retrieving results for {season} round {round_number}...")
-        results = get_results(season, round_number)
-        total = results.get("MRData").get("total")
-        logging.info(
-            f"Retrieved {total} results for {season} round {round_number}.") if results else logging.error(
-            f"Failed to retrieve results for {season} round {round_number}.")
+    # Example 11: Combine filters (e.g., circuits for a specific driver and constructor)
+    circuits_driver_constructor = get_circuits(driver_id="verstappen", constructor_id="red_bull")
+    print(f"Example 11: {circuits_driver_constructor}")
 
-        # Get all seasons
-        logging.info("Retrieving seasons data...")
-        all_seasons = get_seasons()
-        total = all_seasons.get("MRData").get("total")
-        logging.info(f"Retrieved {total} seasons.") if all_seasons else logging.error(
-            "Failed to retrieve seasons data.")
+    # Example 12: Combine filters with status and grid position
+    circuits_status_grid = get_circuits(status_id="1", grid_position="10")
+    print(f"Example 12: {circuits_status_grid}")
 
-        # Get sprint data for a specific season and round
-        logging.info(f"Retrieving sprint data...")
-        sprint = get_sprint()
-        total = sprint.get("MRData").get("total")
-        logging.info(
-            f"Retrieved {total} sprint results.") if sprint else logging.error(
-            f"Failed to retrieve sprint data.")
-
-        # Get status data
-        logging.info("Retrieving status data...")
-        status = get_status()
-        total = status.get("MRData").get("total")
-        logging.info(f"Retrieved {total} status entries.") if status else logging.error(
-            "Failed to retrieve status data.")
-
-        logging.info("All data retrieval completed.")
-
-    except Exception as e:
-        logging.error(f"An unexpected error occurred: {e}")
+    # Example 13: Combine all filters for maximum specificity
+    circuits_all_filters = get_circuits(
+        season="2022",
+        round="5",
+        circuit_id="monaco",
+        constructor_id="ferrari",
+        driver_id="leclerc",
+        fastest_lap_rank="1",
+        grid_position="1",
+        finish_position="1",
+        status_id="1"
+    )
+    print(f"Example 13: {circuits_all_filters}")
 
 
 if __name__ == "__main__":
