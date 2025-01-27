@@ -64,56 +64,37 @@ def get_all_data(endpoint, use_cache=True):
     if cache_file in os.listdir(CACHE_DIR):
         return load_cache(cache_file)
 
-    # Initiate variables
-    all_data = {}
-
     # Retrieve initial data
     data = get_data(endpoint, use_cache=False)
 
     # Retrieve total number of datapoints if there are no errors during data retrieval
     if data == "Exception request":
         return data
-    else:
-        total = int(data.get("MRData").get("total"))
 
-    # If number of datapoints is less than the maximum limit of 100, no pagination is necessary
-    if total <= 100:
-        limit = total
-        offset = 0
-        params = {"limit": limit, "offset": offset}
-        all_data = get_data(endpoint, params, False)
+    limit = 100
+    offset = 0
+    params = {"limit": limit, "offset": offset}
 
-    # If there is more datapoints than the limit, a loop will paginate through the API endpoint
-    elif total > 100:
-        limit = 100
-        offset = 0
-        all_data = data
+    total = int(data.get("MRData").get("total"))
+    dynamic_key, inner_key = get_dynamic_keys(data)
 
-        dynamic_key, inner_key = get_dynamic_keys(data)
+    if not dynamic_key or not inner_key:
+        return {"error": "Dynamic keys not identified in response"}
 
-        if not dynamic_key or not inner_key:
-            return {"error": "Dynamic keys not found in data"}
+    all_data = data
+    all_data["MRData"][dynamic_key][inner_key] = []
 
-        all_data["MRData"][dynamic_key][inner_key] = []
+    for offset in range(0, total, params["limit"]):
+        params["offset"] = offset
+        paginated_data = get_data(endpoint, params, use_cache=False)
 
-        while offset < total:
-            params = {"limit": limit, "offset": offset}
-            paginated_data = get_data(endpoint, params, False)
-            # logging.info(f"Received data with limit {limit} and offset {offset}")
+        if "error" in paginated_data:
+            logging.warning(f"Error during pagination at offset {offset}")
+            break
 
-            if paginated_data == "Exception request":
-                logging.error("An error occurred while fetching paginated data.")
-                break
-
-            paginated_dynamic_data = (
-                paginated_data.get("MRData").
-                get(dynamic_key).
-                get(inner_key)
-            )
-
-            all_data["MRData"][dynamic_key][inner_key].extend(paginated_dynamic_data)
-            # logging.info(f"Appended {len(paginated_dynamic_data)} items from offset {offset}")
-            offset += limit
+        all_data["MRData"][dynamic_key][inner_key].extend(
+            paginated_data.get("MRData", {}).get(dynamic_key, {}).get(inner_key, [])
+        )
 
     # Cache data if cache is enabled
     if use_cache:
@@ -177,27 +158,45 @@ def get_dynamic_keys(data):
 def main():
     # Example 1: Get all circuits for the 2024 season
     circuits_2024 = get_resource(resource_type="circuits", season="2024")
-    print(f"Example 1: {circuits_2024}")
+    total = circuits_2024["MRData"]["total"]
+    dynamic_key, inner_key = get_dynamic_keys(circuits_2024)
+    length = len(circuits_2024["MRData"][dynamic_key][inner_key])
+    print(f"Example 1: total of {total} and length of {length}")
 
     # Example 2: Get constructors for the first round of 2024
     constructors_round_1 = get_resource(resource_type="constructors", season="2024", round="1")
-    print(f"Example 2: {constructors_round_1}")
+    total = constructors_round_1["MRData"]["total"]
+    dynamic_key, inner_key = get_dynamic_keys(constructors_round_1)
+    length = len(constructors_round_1["MRData"][dynamic_key][inner_key])
+    print(f"Example 2: total of {total} and length of {length}")
 
     # Example 3: Get lap data for the 10th lap of the 2023 Monaco Grand Prix
     laps_monaco = get_resource(resource_type="laps", season="2023", round="6", laps="10")
-    print(f"Example 3: {laps_monaco}")
+    total = laps_monaco["MRData"]["total"]
+    dynamic_key, inner_key = get_dynamic_keys(laps_monaco)
+    length = len(laps_monaco["MRData"][dynamic_key][inner_key])
+    print(f"Example 3: total of {total} and length of {length}")
 
     # Example 4: Get pitstops for the 4th stop of the 2019 Azerbaijan Grand Prix
     pitstops_azerbaijan = get_resource(resource_type="pitstops", season="2019", round="4", pitstops="4")
-    print(f"Example 4: {pitstops_azerbaijan}")
+    total = pitstops_azerbaijan["MRData"]["total"]
+    dynamic_key, inner_key = get_dynamic_keys(pitstops_azerbaijan)
+    length = len(pitstops_azerbaijan["MRData"][dynamic_key][inner_key])
+    print(f"Example 4: total of {total} and length of {length}")
 
     # Example 5: Get driver standings for the 2024 season
     driver_standings_2024 = get_resource(resource_type="driverstandings", season="2024")
-    print(f"Example 5: {driver_standings_2024}")
+    total = driver_standings_2024["MRData"]["total"]
+    dynamic_key, inner_key = get_dynamic_keys(driver_standings_2024)
+    length = len(driver_standings_2024["MRData"][dynamic_key][inner_key])
+    print(f"Example 5: total of {total} and length of {length}")
 
     # Example 6: Get results for Max Verstappen in the 2021 season
     verstappen_results = get_resource(resource_type="results", season="2021", drivers_id="max_verstappen")
-    print(f"Example 6: {verstappen_results}")
+    total = verstappen_results["MRData"]["total"]
+    dynamic_key, inner_key = get_dynamic_keys(verstappen_results)
+    length = len(verstappen_results["MRData"][dynamic_key][inner_key])
+    print(f"Example 6: total of {total} and length of {length}")
 
     # Example 7: Combine filters to get specific qualifying results
     qualifying_results = get_resource(
@@ -207,15 +206,24 @@ def main():
         circuits_id="baku",
         drivers_id="leclerc"
     )
-    print(f"Example 7: {qualifying_results}")
+    total = qualifying_results["MRData"]["total"]
+    dynamic_key, inner_key = get_dynamic_keys(qualifying_results)
+    length = len(qualifying_results["MRData"][dynamic_key][inner_key])
+    print(f"Example 7: total of {total} and length of {length}")
 
     # Example 8: Get constructors in position 1 for the 2020 season
     constructor_position_1 = get_resource(resource_type="constructorstandings", season="2020", position="1")
-    print(f"Example 8: {constructor_position_1}")
+    total = constructor_position_1["MRData"]["total"]
+    dynamic_key, inner_key = get_dynamic_keys(constructor_position_1)
+    length = len(constructor_position_1["MRData"][dynamic_key][inner_key])
+    print(f"Example 8: total of {total} and length of {length}")
 
     # Example 9: Get seasons featuring a specific status ID (e.g., statusId=2)
     seasons_status_2 = get_resource(resource_type="seasons", status_id="2")
-    print(f"Example 9: {seasons_status_2}")
+    total = seasons_status_2["MRData"]["total"]
+    dynamic_key, inner_key = get_dynamic_keys(seasons_status_2)
+    length = len(seasons_status_2["MRData"][dynamic_key][inner_key])
+    print(f"Example 9: total of {total} and length of {length}")
 
 
 
