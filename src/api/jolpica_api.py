@@ -88,27 +88,11 @@ def get_all_data(endpoint, use_cache=True):
         limit = 100
         offset = 0
         all_data = data
-        dynamic_key = None
 
-        for key in data.get("MRData").keys():
-            if key not in ["xmlns", "series", "url", "limit", "offset", "total"]:
-                dynamic_key = key
-                break
+        dynamic_key, inner_key = get_dynamic_keys(data)
 
-        if not dynamic_key:
-            logging.error("Unable to identify dynamic key")
-            return "Error: unable to process data structure"
-
-        inner_key = None
-        dynamic_value = data["MRData"].get(dynamic_key)
-        if isinstance(dynamic_value, dict):
-            for key in dynamic_value.keys():
-                inner_key = key
-                break
-
-        if not inner_key:
-            logging.error("Unable to find inner key in dynamic key")
-            return "Error: unable to find inner key"
+        if not dynamic_key or not inner_key:
+            return {"error": "Dynamic keys not found in data"}
 
         all_data["MRData"][dynamic_key][inner_key] = []
 
@@ -180,6 +164,15 @@ def build_endpoint(resource_type, **filters):
         endpoint_parts.append(filters["position"])
 
     return "/".join(endpoint_parts)
+
+def get_dynamic_keys(data):
+    dynamic_key = next((k for k in data.get("MRData", {}).keys() if k not in ["xmlns", "series", "url", "limit", "offset", "total"]), None)
+    inner_key = None
+    if dynamic_key:
+        dynamic_value = data["MRData"].get(dynamic_key, {})
+        if isinstance(dynamic_value, dict):
+            inner_key = next(iter(dynamic_value.keys()), None)
+    return dynamic_key, inner_key
 
 def main():
     # Example 1: Get all circuits for the 2024 season
