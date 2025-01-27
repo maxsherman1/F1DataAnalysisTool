@@ -4,16 +4,18 @@ import os
 import requests
 from pathlib import Path
 
-# Set up logging
+#  Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# The base URL for the API
+# Constants
 BASE_URL = "https://api.jolpi.ca/ergast/f1/"
-
 CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "data/cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+DEFAULT_LIMIT = 30
+MAXIMUM_LIMIT = 100
+DEFAULT_OFFSET = 0
 
-def get_data(endpoint, params={"limit": 30, "offset": 0}, use_cache=True):
+def get_data(endpoint, params=None, use_cache=True):
     """
     Retrieves data from the Jolpica-F1 API with optional caching.
 
@@ -22,6 +24,10 @@ def get_data(endpoint, params={"limit": 30, "offset": 0}, use_cache=True):
     :param use_cache: Whether to use cached data if available
     :return: JSON response from the API
     """
+    # Set default parameters if no parameters are provided
+    if params is None:
+        params = {"limit": DEFAULT_LIMIT, "offset": DEFAULT_OFFSET}
+
     # Extract parameters
     limit = params.get("limit")
     offset = params.get("offset")
@@ -29,11 +35,11 @@ def get_data(endpoint, params={"limit": 30, "offset": 0}, use_cache=True):
     # Cache file name
     cache_file = f"{endpoint.replace('/', '_')}_{limit}_{offset}.json"
 
-    # return cache file if file is found in cache folder
-    if cache_file in os.listdir(CACHE_DIR):
+    # Return cached file if cache is enabled and cache file exists
+    if use_cache and is_cached(cache_file):
         return load_cache(cache_file)
 
-    # Add enpoint to the base url
+    # Add endpoint to the base url
     url = f"{BASE_URL}{endpoint}"
 
     # Make API call
@@ -61,7 +67,9 @@ def get_all_data(endpoint, use_cache=True):
 
     # return cache file if file is found in cache folder
     cache_file = f"{endpoint.replace('/', '_')}_all.json"
-    if cache_file in os.listdir(CACHE_DIR):
+
+    # Return cached file if cache is enabled and cache file exists
+    if use_cache and is_cached(cache_file):
         return load_cache(cache_file)
 
     # Retrieve initial data
@@ -71,27 +79,35 @@ def get_all_data(endpoint, use_cache=True):
     if data == "Exception request":
         return data
 
-    limit = 100
-    offset = 0
+    # Set parameters
+    limit = MAXIMUM_LIMIT
+    offset = DEFAULT_OFFSET
     params = {"limit": limit, "offset": offset}
 
+    # Get total and dynamic keys for pagination handling
     total = int(data.get("MRData").get("total"))
     dynamic_key, inner_key = get_dynamic_keys(data)
 
     if not dynamic_key or not inner_key:
         return {"error": "Dynamic keys not identified in response"}
 
+    # Extract metadata
     all_data = data
     all_data["MRData"][dynamic_key][inner_key] = []
 
+    # Pagination handler loop
     for offset in range(0, total, params["limit"]):
+
+        # Set offset and retrieve data
         params["offset"] = offset
         paginated_data = get_data(endpoint, params, use_cache=False)
 
+        # Error handling
         if "error" in paginated_data:
             logging.warning(f"Error during pagination at offset {offset}")
             break
 
+        # Append data to the inner key list
         all_data["MRData"][dynamic_key][inner_key].extend(
             paginated_data.get("MRData", {}).get(dynamic_key, {}).get(inner_key, [])
         )
@@ -116,6 +132,10 @@ def load_cache(file_name):
     with open(cache_file, "r") as f:
         logging.info(f"Data loaded from {file_name} successfully.")
         return json.load(f)
+
+# Checks if cache file is in the cache directory
+def is_cached(file_name):
+    return (CACHE_DIR / file_name).exists()
 
 # Retrieves resource data dynamically based on filters
 def get_resource(resource_type, **filters):
