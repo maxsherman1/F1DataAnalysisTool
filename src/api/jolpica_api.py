@@ -63,7 +63,7 @@ def get_data(endpoint, params=None, use_cache=True):
         return {"error": str(e)}
 
 # Retrieve all data from endpoint using pagination
-def get_all_data(endpoint, use_cache=True):
+def get_all_data(resource_type, endpoint, use_cache=True):
 
     # return cache file if file is found in cache folder
     cache_file = f"{endpoint.replace('/', '_')}_all.json"
@@ -86,14 +86,13 @@ def get_all_data(endpoint, use_cache=True):
 
     # Get total and dynamic keys for pagination handling
     total = int(data.get("MRData").get("total"))
-    dynamic_key, inner_key = get_dynamic_keys(data)
+    dynamic_key, inner_key_path = get_dynamic_keys(data, resource_type)
 
-    if not dynamic_key or not inner_key:
+    if not dynamic_key or not inner_key_path:
         return {"error": "Dynamic keys not identified in response"}
 
     # Extract metadata
-    all_data = data
-    all_data["MRData"][dynamic_key][inner_key] = []
+    all_data = remove_inner_data(data, dynamic_key, inner_key_path)
 
     # Pagination handler loop
     for offset in range(0, total, params["limit"]):
@@ -108,9 +107,9 @@ def get_all_data(endpoint, use_cache=True):
             break
 
         # Append data to the inner key list
-        all_data["MRData"][dynamic_key][inner_key].extend(
-            paginated_data.get("MRData", {}).get(dynamic_key, {}).get(inner_key, [])
-        )
+        inner_paginated_data = find_inner_data(paginated_data, dynamic_key, inner_key_path)
+        all_data = extend_inner_data(all_data, dynamic_key, inner_key_path, inner_paginated_data)
+        print(f"Length of inner paginated data: {len(inner_paginated_data)}")
 
     # Cache data if cache is enabled
     if use_cache:
@@ -140,7 +139,7 @@ def is_cached(file_name):
 # Retrieves resource data dynamically based on filters
 def get_resource(resource_type, **filters):
     endpoint = build_endpoint(resource_type, **filters)
-    return get_all_data(endpoint)
+    return get_all_data(resource_type, endpoint)
 
 # Builds the endpoint URL dynamically based on filters
 def build_endpoint(resource_type, **filters):
@@ -166,86 +165,96 @@ def build_endpoint(resource_type, **filters):
 
     return "/".join(endpoint_parts)
 
-def get_dynamic_keys(data):
-    dynamic_key = next((k for k in data.get("MRData", {}).keys() if k not in ["xmlns", "series", "url", "limit", "offset", "total"]), None)
-    inner_key = None
-    if dynamic_key:
-        dynamic_value = data["MRData"].get(dynamic_key, {})
-        if isinstance(dynamic_value, dict):
-            inner_key = next(iter(dynamic_value.keys()), None)
-    return dynamic_key, inner_key
-
-def main():
-    # Example 1: Get all circuits for the 2024 season
-    circuits_2024 = get_resource(resource_type="circuits", season="2024")
-    total = circuits_2024["MRData"]["total"]
-    dynamic_key, inner_key = get_dynamic_keys(circuits_2024)
-    length = len(circuits_2024["MRData"][dynamic_key][inner_key])
-    print(f"Example 1: total of {total} and length of {length}")
-
-    # Example 2: Get constructors for the first round of 2024
-    constructors_round_1 = get_resource(resource_type="constructors", season="2024", round="1")
-    total = constructors_round_1["MRData"]["total"]
-    dynamic_key, inner_key = get_dynamic_keys(constructors_round_1)
-    length = len(constructors_round_1["MRData"][dynamic_key][inner_key])
-    print(f"Example 2: total of {total} and length of {length}")
-
-    # Example 3: Get lap data for the 10th lap of the 2023 Monaco Grand Prix
-    laps_monaco = get_resource(resource_type="laps", season="2023", round="6", laps="10")
-    total = laps_monaco["MRData"]["total"]
-    dynamic_key, inner_key = get_dynamic_keys(laps_monaco)
-    length = len(laps_monaco["MRData"][dynamic_key][inner_key])
-    print(f"Example 3: total of {total} and length of {length}")
-
-    # Example 4: Get pitstops for the 4th stop of the 2019 Azerbaijan Grand Prix
-    pitstops_azerbaijan = get_resource(resource_type="pitstops", season="2019", round="4", pitstops="4")
-    total = pitstops_azerbaijan["MRData"]["total"]
-    dynamic_key, inner_key = get_dynamic_keys(pitstops_azerbaijan)
-    length = len(pitstops_azerbaijan["MRData"][dynamic_key][inner_key])
-    print(f"Example 4: total of {total} and length of {length}")
-
-    # Example 5: Get driver standings for the 2024 season
-    driver_standings_2024 = get_resource(resource_type="driverstandings", season="2024")
-    total = driver_standings_2024["MRData"]["total"]
-    dynamic_key, inner_key = get_dynamic_keys(driver_standings_2024)
-    length = len(driver_standings_2024["MRData"][dynamic_key][inner_key])
-    print(f"Example 5: total of {total} and length of {length}")
-
-    # Example 6: Get results for Max Verstappen in the 2021 season
-    verstappen_results = get_resource(resource_type="results", season="2021", drivers_id="max_verstappen")
-    total = verstappen_results["MRData"]["total"]
-    dynamic_key, inner_key = get_dynamic_keys(verstappen_results)
-    length = len(verstappen_results["MRData"][dynamic_key][inner_key])
-    print(f"Example 6: total of {total} and length of {length}")
-
-    # Example 7: Combine filters to get specific qualifying results
-    qualifying_results = get_resource(
-        resource_type="qualifying",
-        season="2024",
-        round="17",
-        circuits_id="baku",
-        drivers_id="leclerc"
+def get_dynamic_keys(data, resource_type):
+    dynamic_key = next(
+        (k for k in data.get("MRData", {}).keys()
+         if k not in ["xmlns", "series", "url", "limit", "offset", "total"]),
+        None
     )
-    total = qualifying_results["MRData"]["total"]
-    dynamic_key, inner_key = get_dynamic_keys(qualifying_results)
-    length = len(qualifying_results["MRData"][dynamic_key][inner_key])
-    print(f"Example 7: total of {total} and length of {length}")
 
-    # Example 8: Get constructors in position 1 for the 2020 season
-    constructor_position_1 = get_resource(resource_type="constructorstandings", season="2020", position="1")
-    total = constructor_position_1["MRData"]["total"]
-    dynamic_key, inner_key = get_dynamic_keys(constructor_position_1)
-    length = len(constructor_position_1["MRData"][dynamic_key][inner_key])
-    print(f"Example 8: total of {total} and length of {length}")
+    if not dynamic_key:
+        return None, None
 
-    # Example 9: Get seasons featuring a specific status ID (e.g., statusId=2)
-    seasons_status_2 = get_resource(resource_type="seasons", status_id="2")
-    total = seasons_status_2["MRData"]["total"]
-    dynamic_key, inner_key = get_dynamic_keys(seasons_status_2)
-    length = len(seasons_status_2["MRData"][dynamic_key][inner_key])
-    print(f"Example 9: total of {total} and length of {length}")
+    def search_last_keys(nested_dict, target, path=None):
+
+        # declare path list if path is not provided
+        if path is None:
+            path = []
+
+        # Resource type input filtering
+        resources = ["results", "qualifying"]
+        if target.lower() in resources:
+            target = "Races"
+
+        # if the provided dictionary is not a dictionary nor list, return None
+        if not isinstance(nested_dict, (dict, list)):
+            print(f"Target {target} not found in current path: {path}")
+            return None
+
+        # If the argument is a list, retrieve the first value (will always be a dictionary)
+        if isinstance(nested_dict, list):
+            nested_dict = nested_dict[0] if nested_dict else None
 
 
+        last_key = list(nested_dict)[-1] if nested_dict else None
 
-if __name__ == "__main__":
-    main()
+        if last_key and last_key.lower() == target.lower():
+            return path + [last_key]
+
+        value = nested_dict.get(last_key) if nested_dict else None
+
+        if isinstance(value, (dict, list)):
+            return search_last_keys(value, target, path + [last_key])
+
+        print(f"Target '{target}' not found after processing last key: {last_key}")
+        return None
+
+    dynamic_value = data["MRData"].get(dynamic_key)
+    if isinstance(dynamic_value, dict):
+        inner_key_path = search_last_keys(dynamic_value, resource_type)
+        return dynamic_key, inner_key_path
+
+    return dynamic_key, None
+
+def remove_inner_data(data, dynamic_key, inner_key_path):
+    inner_data = data["MRData"][dynamic_key]
+    if inner_key_path:
+        for key in inner_key_path[:-1]:
+            if isinstance(inner_data, list):
+                inner_data = inner_data[0]
+            inner_data = inner_data[key]
+
+        last_key = inner_key_path[-1]
+        if isinstance(inner_data, list):
+            inner_data = inner_data[0]
+        if last_key in inner_data:
+            inner_data[last_key] = []
+    return data
+
+def find_inner_data(data, dynamic_key, inner_key_path):
+    inner_data = data["MRData"][dynamic_key]
+    if inner_key_path:
+        for key in inner_key_path:
+            if isinstance(inner_data, list):
+                inner_data = inner_data[0]
+            inner_data = inner_data[key]
+    return inner_data
+
+def extend_inner_data(data, dynamic_key, inner_key_path, additional_data):
+    inner_data = data["MRData"][dynamic_key]
+
+    if inner_key_path:
+        for key in inner_key_path[:-1]:
+            inner_data = inner_data[key]
+            if isinstance(inner_data, list):
+                inner_data = inner_data[0]  # Handle lists if present
+            print(f"key: {key}, length: {len(inner_data)}")
+
+    last_key = inner_key_path[-1]
+    if last_key in inner_data.keys():
+        if not isinstance(inner_data[last_key], list):
+            raise TypeError(f"Expected a list at {last_key}, but found {type(inner_data[last_key])}.")
+        inner_data[last_key].extend(additional_data)
+        logging.info(f"inner_data_extended successfully at {last_key}")
+
+    return data
