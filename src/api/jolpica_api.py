@@ -59,8 +59,8 @@ def get_data(endpoint, params=None, use_cache=True):
 
     # Error handling if an error occurs during data retrieval
     except requests.exceptions.RequestException as e:
-        logging.error(f"Error retrieving data: \n{e}")
-        return "Exception request"
+        logging.error(f"Error retrieving data from {url} with params {params}: {e}")
+        return {"error": str(e)}
 
 # Retrieve all data from endpoint using pagination
 def get_all_data(endpoint, use_cache=True):
@@ -76,7 +76,7 @@ def get_all_data(endpoint, use_cache=True):
     data = get_data(endpoint, use_cache=False)
 
     # Retrieve total number of datapoints if there are no errors during data retrieval
-    if data == "Exception request":
+    if "error" in data:
         return data
 
     # Set parameters
