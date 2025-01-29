@@ -165,18 +165,22 @@ def build_endpoint(resource_type, **filters):
 
     return "/".join(endpoint_parts)
 
+# get the dynamic keys necessary to identif the inner data
 def get_dynamic_keys(data, resource_type):
+
+    # The dynamic key is the only unique key in the metadata
     dynamic_key = next(
         (k for k in data.get("MRData", {}).keys()
          if k not in ["xmlns", "series", "url", "limit", "offset", "total"]),
         None
     )
 
+    # If the dynamic key can not be found, neither kan the inner key
     if not dynamic_key:
         return None, None
 
+    # Function for search iteration
     def search_last_keys(nested_dict, target, path=None):
-
         # declare path list if path is not provided
         if path is None:
             path = []
@@ -195,66 +199,93 @@ def get_dynamic_keys(data, resource_type):
         if isinstance(nested_dict, list):
             nested_dict = nested_dict[0] if nested_dict else None
 
-
+        # get the key of the last entry of the dictionary
         last_key = list(nested_dict)[-1] if nested_dict else None
 
+        # Check if the target has been found
         if last_key and last_key.lower() == target.lower():
             return path + [last_key]
 
+        # retrieve the value paired with the key
         value = nested_dict.get(last_key) if nested_dict else None
 
-        if isinstance(value, (dict, list)):
+        # If the value is a dict, continue search
+        if isinstance(value, (dict,list)):
             return search_last_keys(value, target, path + [last_key])
 
         print(f"Target '{target}' not found after processing last key: {last_key}")
         return None
 
+    # Get the value of the dynamic key
     dynamic_value = data["MRData"].get(dynamic_key)
+
+    # Check if the value is a dictionary and return the dynamic key and inner key path
     if isinstance(dynamic_value, dict):
         inner_key_path = search_last_keys(dynamic_value, resource_type)
         return dynamic_key, inner_key_path
 
+    # Return just the dynamic key if inner key path cannot be found
     return dynamic_key, None
 
+# Remove the inner data and return the common data structure
 def remove_inner_data(data, dynamic_key, inner_key_path):
+    # Get inner data
     inner_data = data["MRData"][dynamic_key]
-    if inner_key_path:
-        for key in inner_key_path[:-1]:
-            if isinstance(inner_data, list):
-                inner_data = inner_data[0]
-            inner_data = inner_data[key]
 
+    # Check if inner key path has been provided
+    if inner_key_path:
+
+        # Retrieve second to last inner data
+        inner_data = find_inner_data(inner_data, dynamic_key, inner_key_path, True)
+
+        # Get last key
         last_key = inner_key_path[-1]
         if isinstance(inner_data, list):
-            inner_data = inner_data[0]
-        if last_key in inner_data:
+            inner_data = inner_data[0] # Handles lists if present
+        # If last key is in inner data, replace it with an empty list
+        if last_key in inner_data.keys():
             inner_data[last_key] = []
+
+    # Return the data
     return data
 
-def find_inner_data(data, dynamic_key, inner_key_path):
+# find the inner data and returns it
+def find_inner_data(data, dynamic_key, inner_key_path, return_parent=False):
+    # Retrieve initial inner data
     inner_data = data["MRData"][dynamic_key]
+
+    if return_parent:
+        x = -1
+    else:
+        x = len(inner_key_path)
+
+    # Loop through the path list until the final value has been found
     if inner_key_path:
-        for key in inner_key_path:
+        for key in inner_key_path[:x]:
             if isinstance(inner_data, list):
                 inner_data = inner_data[0]
             inner_data = inner_data[key]
+
+    # Return inner data
     return inner_data
 
+# Extend the inner data with additional provided data
 def extend_inner_data(data, dynamic_key, inner_key_path, additional_data):
-    inner_data = data["MRData"][dynamic_key]
 
-    if inner_key_path:
-        for key in inner_key_path[:-1]:
-            inner_data = inner_data[key]
-            if isinstance(inner_data, list):
-                inner_data = inner_data[0]  # Handle lists if present
-            print(f"key: {key}, length: {len(inner_data)}")
+    # Get second to last inner data
+    inner_data = find_inner_data(data, dynamic_key, inner_key_path, True)
 
+    # Get last key
     last_key = inner_key_path[-1]
+
+    # If the key is in the inner data
     if last_key in inner_data.keys():
+        # Chcek if not a list
         if not isinstance(inner_data[last_key], list):
             raise TypeError(f"Expected a list at {last_key}, but found {type(inner_data[last_key])}.")
+        # Extend additional data
         inner_data[last_key].extend(additional_data)
         logging.info(f"inner_data_extended successfully at {last_key}")
 
+    # return data
     return data
