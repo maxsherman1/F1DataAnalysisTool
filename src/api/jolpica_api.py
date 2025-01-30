@@ -217,21 +217,16 @@ def remove_inner_data(data, inner_key_path):
     return data
 
 # find the inner data and returns it
-def find_inner_data(data, dynamic_key, inner_key_path, return_parent=False):
+def find_inner_data(data, inner_key_path, return_parent=False):
     # Retrieve initial inner data
-    inner_data = data["MRData"][dynamic_key]
-
-    if return_parent:
-        x = -1
-    else:
-        x = len(inner_key_path)
+    inner_data = data["MRData"]
+    x = -1 if return_parent else len(inner_key_path)
 
     # Loop through the path list until the final value has been found
-    if inner_key_path:
-        for key in inner_key_path[:x]:
-            if isinstance(inner_data, list):
-                inner_data = inner_data[0]
-            inner_data = inner_data[key]
+    for key in inner_key_path[:x]:
+        if isinstance(inner_data, list):
+            inner_data = inner_data[0]
+        inner_data = inner_data[key]
 
     # Return inner data
     return inner_data
