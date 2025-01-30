@@ -165,23 +165,8 @@ def build_endpoint(resource_type, **filters):
 
     return "/".join(endpoint_parts)
 
-# get the dynamic keys necessary to identif the inner data
-def get_dynamic_keys(data, resource_type):
-
-    # The dynamic key is the only unique key in the metadata
-    dynamic_key = next(
-        (k for k in data.get("MRData", {}).keys()
-         if k not in ["xmlns", "series", "url", "limit", "offset", "total"]),
-        None
-    )
-
-    # If the dynamic key can not be found, neither kan the inner key
-    if not dynamic_key:
-        return None, None
-
-    # Function for search iteration
-    def search_last_keys(nested_dict, target, path=None):
-        # declare path list if path is not provided
+def get_inner_key_path(data, resource_type):
+    def search_inner_keys(nested_dict, target, path=None):
         if path is None:
             path = []
 
@@ -209,23 +194,11 @@ def get_dynamic_keys(data, resource_type):
         # retrieve the value paired with the key
         value = nested_dict.get(last_key) if nested_dict else None
 
-        # If the value is a dict, continue search
-        if isinstance(value, (dict,list)):
-            return search_last_keys(value, target, path + [last_key])
+        if isinstance(value, (dict, list)):
+            return search_inner_keys(value, target, path + [last_key])
 
-        print(f"Target '{target}' not found after processing last key: {last_key}")
         return None
-
-    # Get the value of the dynamic key
-    dynamic_value = data["MRData"].get(dynamic_key)
-
-    # Check if the value is a dictionary and return the dynamic key and inner key path
-    if isinstance(dynamic_value, dict):
-        inner_key_path = search_last_keys(dynamic_value, resource_type)
-        return dynamic_key, inner_key_path
-
-    # Return just the dynamic key if inner key path cannot be found
-    return dynamic_key, None
+    return search_inner_keys(data.get("MRData", {}), resource_type)
 
 # Remove the inner data and return the common data structure
 def remove_inner_data(data, dynamic_key, inner_key_path):
