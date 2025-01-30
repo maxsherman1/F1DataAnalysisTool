@@ -58,7 +58,7 @@ def get_data(endpoint: str, params: Optional[Dict[str, Any]] = None, use_cache: 
         return {"error": str(e)}
 
 # Retrieve all data from endpoint using pagination
-def get_all_data(resource_type, use_cache=True, **filters):
+def get_all_data(resource_type: str, use_cache: bool = True, **filters) -> Dict[str, Any]:
 
     # Get data retrieval endpoint
     endpoint = build_endpoint(resource_type, **filters)
@@ -77,10 +77,8 @@ def get_all_data(resource_type, use_cache=True, **filters):
     if "error" in data:
         return data
 
-    # Set parameters
-    limit = MAXIMUM_LIMIT
-    offset = DEFAULT_OFFSET
-    params = {"limit": limit, "offset": offset}
+    # Retrieve total number of datapoints
+    total = int(data.get("MRData", {}).get("total", 0))
 
     # Get the path of the inner key
     inner_key_path = get_inner_key_path(data, resource_type)
@@ -92,8 +90,8 @@ def get_all_data(resource_type, use_cache=True, **filters):
     # Extract metadata
     all_data = remove_inner_data(data, inner_key_path)
 
-    # Retrieve total number of datapoints
-    total = int(data.get("MRData").get("total"))
+    # Set parameters
+    params = {"limit": MAXIMUM_LIMIT, "offset": DEFAULT_OFFSET}
 
     # Pagination handler loop
     for offset in range(0, total, params["limit"]):
