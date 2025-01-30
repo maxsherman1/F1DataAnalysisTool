@@ -232,10 +232,10 @@ def find_inner_data(data, inner_key_path, return_parent=False):
     return inner_data
 
 # Extend the inner data with additional provided data
-def extend_inner_data(data, dynamic_key, inner_key_path, additional_data):
+def extend_inner_data(data, inner_key_path, additional_data):
 
     # Get second to last inner data
-    inner_data = find_inner_data(data, dynamic_key, inner_key_path, True)
+    inner_data = find_inner_data(data, inner_key_path, True)
 
     # Get last key
     last_key = inner_key_path[-1]
