@@ -201,23 +201,17 @@ def get_inner_key_path(data, resource_type):
     return search_inner_keys(data.get("MRData", {}), resource_type)
 
 # Remove the inner data and return the common data structure
-def remove_inner_data(data, dynamic_key, inner_key_path):
-    # Get inner data
-    inner_data = data["MRData"][dynamic_key]
+def remove_inner_data(data, inner_key_path):
+    # Retrieve second to last inner data
+    inner_data = find_inner_data(data, inner_key_path, return_parent=True)
 
-    # Check if inner key path has been provided
-    if inner_key_path:
-
-        # Retrieve second to last inner data
-        inner_data = find_inner_data(inner_data, dynamic_key, inner_key_path, True)
-
-        # Get last key
-        last_key = inner_key_path[-1]
-        if isinstance(inner_data, list):
-            inner_data = inner_data[0] # Handles lists if present
-        # If last key is in inner data, replace it with an empty list
-        if last_key in inner_data.keys():
-            inner_data[last_key] = []
+    # Get last key
+    last_key = inner_key_path[-1]
+    if isinstance(inner_data, list):
+        inner_data = inner_data[0] # Handles lists if present
+    # If last key is in inner data, replace it with an empty list
+    if last_key in inner_data.keys():
+        inner_data[last_key] = []
 
     # Return the data
     return data
