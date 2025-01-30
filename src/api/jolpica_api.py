@@ -63,7 +63,10 @@ def get_data(endpoint, params=None, use_cache=True):
         return {"error": str(e)}
 
 # Retrieve all data from endpoint using pagination
-def get_all_data(resource_type, endpoint, use_cache=True):
+def get_all_data(resource_type, use_cache=True, **filters):
+
+    # Get data retrieval endpoint
+    endpoint = build_endpoint(resource_type, **filters)
 
     # return cache file if file is found in cache folder
     cache_file = f"{endpoint.replace('/', '_')}_all.json"
@@ -137,11 +140,6 @@ def load_cache(file_name):
 # Checks if cache file is in the cache directory
 def is_cached(file_name):
     return (CACHE_DIR / file_name).exists()
-
-# Retrieves resource data dynamically based on filters
-def get_resource(resource_type, **filters):
-    endpoint = build_endpoint(resource_type, **filters)
-    return get_all_data(resource_type, endpoint)
 
 # Builds the endpoint URL dynamically based on filters
 def build_endpoint(resource_type, **filters):
