@@ -84,15 +84,18 @@ def get_all_data(resource_type, endpoint, use_cache=True):
     offset = DEFAULT_OFFSET
     params = {"limit": limit, "offset": offset}
 
-    # Get total and dynamic keys for pagination handling
-    total = int(data.get("MRData").get("total"))
-    dynamic_key, inner_key_path = get_dynamic_keys(data, resource_type)
+    # Get the path of the inner key
+    inner_key_path = get_inner_key_path(data, resource_type)
 
-    if not dynamic_key or not inner_key_path:
-        return {"error": "Dynamic keys not identified in response"}
+    # Error handling for inner key identification
+    if not inner_key_path:
+        return {"error": "Inner data path not identified in response"}
 
     # Extract metadata
-    all_data = remove_inner_data(data, dynamic_key, inner_key_path)
+    all_data = remove_inner_data(data, inner_key_path)
+
+    # Retrieve total number of datapoints
+    total = int(data.get("MRData").get("total"))
 
     # Pagination handler loop
     for offset in range(0, total, params["limit"]):
@@ -107,9 +110,8 @@ def get_all_data(resource_type, endpoint, use_cache=True):
             break
 
         # Append data to the inner key list
-        inner_paginated_data = find_inner_data(paginated_data, dynamic_key, inner_key_path)
-        all_data = extend_inner_data(all_data, dynamic_key, inner_key_path, inner_paginated_data)
-        print(f"Length of inner paginated data: {len(inner_paginated_data)}")
+        inner_paginated_data = find_inner_data(paginated_data, inner_key_path)
+        all_data = extend_inner_data(all_data, inner_key_path, inner_paginated_data)
 
     # Cache data if cache is enabled
     if use_cache:
@@ -247,7 +249,6 @@ def extend_inner_data(data, inner_key_path, additional_data):
             raise TypeError(f"Expected a list at {last_key}, but found {type(inner_data[last_key])}.")
         # Extend additional data
         inner_data[last_key].extend(additional_data)
-        logging.info(f"inner_data_extended successfully at {last_key}")
 
     # return data
     return data
