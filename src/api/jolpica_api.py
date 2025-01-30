@@ -237,18 +237,29 @@ def find_inner_data(data, inner_key_path, return_parent=False):
 def extend_inner_data(data, inner_key_path, additional_data):
 
     # Get second to last inner data
-    inner_data = find_inner_data(data, inner_key_path, True)
+    inner_data = find_inner_data(data, inner_key_path, False)
 
-    # Get last key
-    last_key = inner_key_path[-1]
+    if not isinstance(inner_data, list):
+        raise TypeError(f"Expected a list at {inner_key_path[-1]}, but found {type(inner_data[inner_key_path[-1]])}.")
 
-    # If the key is in the inner data
-    if last_key in inner_data.keys():
-        # Chcek if not a list
-        if not isinstance(inner_data[last_key], list):
-            raise TypeError(f"Expected a list at {last_key}, but found {type(inner_data[last_key])}.")
-        # Extend additional data
-        inner_data[last_key].extend(additional_data)
+    if inner_data and additional_data:
+        last_inner_entry = inner_data[-1]
+        first_additional_data = additional_data[0]
 
-    # return data
+        common_keys = set(last_inner_entry.keys()) & set(first_additional_data.keys())
+
+        if common_keys:
+            matching_key = next(iter(common_keys))
+
+            if last_inner_entry[matching_key] == first_additional_data[matching_key]:
+                for key in last_inner_entry.keys():
+                    if isinstance(last_inner_entry[key], list) and isinstance(first_additional_data.get(key), list):
+                        existing_values = {tuple(sorted(item.items())) for item in last_inner_entry[key]}
+                        new_values = [item for item in first_additional_data[key] if tuple(sorted(item.items())) not in existing_values]
+                        last_inner_entry[key].extend(new_values)
+
+                additional_data = additional_data[1:]
+
+    inner_data.extend(additional_data)
+
     return data
