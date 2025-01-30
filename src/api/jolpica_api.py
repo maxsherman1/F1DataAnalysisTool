@@ -1,11 +1,11 @@
 import json
 import logging
-import os
 import requests
 from pathlib import Path
+from typing import Dict, Any, List, Optional
 
 #  Logging configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Constants
 BASE_URL = "https://api.jolpi.ca/ergast/f1/"
@@ -15,7 +15,7 @@ DEFAULT_LIMIT = 30
 MAXIMUM_LIMIT = 100
 DEFAULT_OFFSET = 0
 
-def get_data(endpoint, params=None, use_cache=True):
+def get_data(endpoint: str, params: Optional[Dict[str, Any]] = None, use_cache: bool = True) -> Dict[str, Any]:
     """
     Retrieves data from the Jolpica-F1 API with optional caching.
 
@@ -25,15 +25,10 @@ def get_data(endpoint, params=None, use_cache=True):
     :return: JSON response from the API
     """
     # Set default parameters if no parameters are provided
-    if params is None:
-        params = {"limit": DEFAULT_LIMIT, "offset": DEFAULT_OFFSET}
-
-    # Extract parameters
-    limit = params.get("limit")
-    offset = params.get("offset")
+    params = params or {"limit": DEFAULT_LIMIT, "offset": DEFAULT_OFFSET}
 
     # Cache file name
-    cache_file = f"{endpoint.replace('/', '_')}_{limit}_{offset}.json"
+    cache_file = CACHE_DIR / f"{endpoint.replace('/', '_')}_{params['limit']}_{params['offset']}.json"
 
     # Return cached file if cache is enabled and cache file exists
     if use_cache and is_cached(cache_file):
@@ -69,7 +64,7 @@ def get_all_data(resource_type, use_cache=True, **filters):
     endpoint = build_endpoint(resource_type, **filters)
 
     # return cache file if file is found in cache folder
-    cache_file = f"{endpoint.replace('/', '_')}_all.json"
+    cache_file = CACHE_DIR / f"{endpoint.replace('/', '_')}_all.json"
 
     # Return cached file if cache is enabled and cache file exists
     if use_cache and is_cached(cache_file):
@@ -124,22 +119,20 @@ def get_all_data(resource_type, use_cache=True, **filters):
     return all_data
 
 # Cache data function (does not check if cache folder is present)
-def cache_data(file_name, data):
-    cache_file = f"{CACHE_DIR}/{file_name}"
-    with open(cache_file, "w") as f:
+def cache_data(file_path: Path, data: Dict[str, Any]) -> None:
+    with open(file_path, "w") as f:
         json.dump(data, f)
-    logging.info(f"Data cached to {file_name} successfully.")
+    logging.info(f"Data cached to {file_path} successfully.")
 
 # Load data function (does not check if cache file is present)
-def load_cache(file_name):
-    cache_file = f"{CACHE_DIR}/{file_name}"
-    with open(cache_file, "r") as f:
-        logging.info(f"Data loaded from {file_name} successfully.")
+def load_cache(file_path: Path) -> Dict[str, Any]:
+    with file_path.open("r") as f:
+        logging.info(f"Data loaded from {file_path} successfully.")
         return json.load(f)
 
 # Checks if cache file is in the cache directory
-def is_cached(file_name):
-    return (CACHE_DIR / file_name).exists()
+def is_cached(file_path: Path) -> bool:
+    return file_path.exists()
 
 # Builds the endpoint URL dynamically based on filters
 def build_endpoint(resource_type, **filters):
