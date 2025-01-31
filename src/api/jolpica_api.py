@@ -206,7 +206,7 @@ def set_inner_data(data: Dict[str, Any], inner_key_path: List[str], inner_data: 
     return data
 
 # find the inner data and returns it
-def get_inner_data(data: Dict[str, Any], inner_key_path: List[str], return_parent: bool = False) -> Any:
+def get_inner_data(data: Dict[str, Any], inner_key_path: List[str], return_parent: bool = False) -> List:
     # Retrieve initial inner data
     inner_data = data["MRData"]
     x = -1 if return_parent else len(inner_key_path)
@@ -221,31 +221,40 @@ def get_inner_data(data: Dict[str, Any], inner_key_path: List[str], return_paren
     return inner_data
 
 # Extend the inner data with additional provided data
-def extend_inner_data(data: Dict[str, Any], additional_data: List[Any]) -> Dict[str, Any]:
+def extend_inner_data(data: List, additional_data: List) -> List:
 
-    if not isinstance(data, list):
-        raise TypeError(f"Expected a list from data but found {type(data)}.")
+    # Data validation
+    if not isinstance(data, list) or not isinstance(additional_data, list):
+        raise TypeError(f"Both data arguments must be lists for appending.")
 
-    if not isinstance(additional_data, list):
-        raise TypeError(f"Expected a list from additional_data but found {type(additional_data)}.")
+    if not data or not additional_data:
+        return data + additional_data
 
-    if data and additional_data:
-        last_inner_entry = data[-1]
-        first_additional_data = additional_data[0]
+    # Retrieve the entries that required concatenating
+    last_inner_entry = data[-1]
+    first_additional_entry = additional_data[0]
 
-        common_keys = set(last_inner_entry.keys()) & set(first_additional_data.keys())
+    # Find the keys present in both entries
+    common_keys = set(last_inner_entry.keys()) & set(first_additional_entry.keys())
 
-        if common_keys:
-            matching_key = next(iter(common_keys))
+    if not common_keys:
+        data.extend(additional_data)
+        return data
 
-            if last_inner_entry[matching_key] == first_additional_data[matching_key]:
-                for key in last_inner_entry:
-                    if isinstance(last_inner_entry[key], list) and isinstance(first_additional_data.get(key), list):
-                        existing_values = {tuple(sorted(item.items())) for item in last_inner_entry[key]}
-                        new_values = [item for item in first_additional_data[key] if tuple(sorted(item.items())) not in existing_values]
-                        last_inner_entry[key].extend(new_values)
+    common_data_found = any(last_inner_entry[key] == first_additional_entry[key] for key in common_keys)
 
-                additional_data = additional_data[1:]
+    if not common_data_found:
+        data.extend(additional_data)
+        return data
 
-    data.extend(additional_data)
+    unique_data_keys = {key for key in common_keys if last_inner_entry[key] != first_additional_entry[key]}
+
+    for key in unique_data_keys:
+        existing_values = {tuple(sorted(item.items())) for item in last_inner_entry[key]}
+        new_values = [item for item in first_additional_entry[key] if tuple(sorted(item.items())) not in existing_values]
+        last_inner_entry[key].extend(new_values)
+
+    additional_data = additional_data[1:]  # Skip the first additional entry
+
+    data.extend(additional_data) if additional_data else None
     return data
