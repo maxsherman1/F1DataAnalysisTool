@@ -136,23 +136,26 @@ def is_cached(file_path: Path) -> bool:
 def build_endpoint(resource_type, **filters):
     endpoint_parts = []
 
-    # Add season and round first
-    if filters.get("season"):
-        endpoint_parts.append(filters["season"])
-        if filters.get("round"):
-            endpoint_parts.append(filters["round"])
+    # Add season and round first if present
+    season = filters.pop("season", None)
+    round_number = filters.pop("round", None)
+    if season:
+        endpoint_parts.append(season)
+        if round_number:
+            endpoint_parts.append(round_number)
 
-    # Add other filters dynamically
+    # Add other filters dynamically excluding position
+    position = filters.pop("position", None)
     for key, value in filters.items():
-        if key not in ["season", "round", "position"] and value:
-            endpoint_parts.extend([key.replace("_id", ""), value])
+        if value:
+            endpoint_parts.extend([key, value])
 
     # Append resource type at the end if not already added
     if resource_type not in endpoint_parts:
         endpoint_parts.append(resource_type)
 
-    if filters.get("position"):
-        endpoint_parts.append(filters["position"])
+    if position:
+        endpoint_parts.append(position)
 
     return "/".join(endpoint_parts)
 
