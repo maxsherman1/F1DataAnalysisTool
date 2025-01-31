@@ -187,7 +187,7 @@ def get_inner_key_path(data: Dict[str, Any], resource_type: str) -> Optional[Lis
     return search_inner_keys(data.get("MRData", {}), resource_type)
 
 # Remove the inner data and return the common data structure
-def remove_inner_data(data, inner_key_path):
+def remove_inner_data(data: Dict[str, Any], inner_key_path: List[str]) -> Dict[str, Any]:
     # Retrieve second to last inner data
     inner_data = find_inner_data(data, inner_key_path, return_parent=True)
 
@@ -203,7 +203,7 @@ def remove_inner_data(data, inner_key_path):
     return data
 
 # find the inner data and returns it
-def find_inner_data(data, inner_key_path, return_parent=False):
+def find_inner_data(data: Dict[str, Any], inner_key_path: List[str], return_parent: bool = False) -> Any:
     # Retrieve initial inner data
     inner_data = data["MRData"]
     x = -1 if return_parent else len(inner_key_path)
@@ -218,7 +218,7 @@ def find_inner_data(data, inner_key_path, return_parent=False):
     return inner_data
 
 # Extend the inner data with additional provided data
-def extend_inner_data(data, inner_key_path, additional_data):
+def extend_inner_data(data: Dict[str, Any], inner_key_path: List[str], additional_data: List[Any]) -> Dict[str, Any]:
 
     # Get second to last inner data
     inner_data = find_inner_data(data, inner_key_path, False)
