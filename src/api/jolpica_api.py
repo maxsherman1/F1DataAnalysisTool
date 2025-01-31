@@ -133,7 +133,7 @@ def is_cached(file_path: Path) -> bool:
     return file_path.exists()
 
 # Builds the endpoint URL dynamically based on filters
-def build_endpoint(resource_type, **filters):
+def build_endpoint(resource_type: str, **filters) -> str:
     endpoint_parts = []
 
     # Add season and round first if present
