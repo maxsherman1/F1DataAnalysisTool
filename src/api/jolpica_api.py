@@ -159,39 +159,31 @@ def build_endpoint(resource_type, **filters):
 
     return "/".join(endpoint_parts)
 
-def get_inner_key_path(data, resource_type):
-    def search_inner_keys(nested_dict, target, path=None):
-        if path is None:
-            path = []
+def get_inner_key_path(data: Dict[str, Any], resource_type: str) -> Optional[List[str]]:
+    def search_inner_keys(nested: Any, target: str, path: Optional[List[str]] = None) -> Optional[List[str]]:
+        path = path or []
 
         # Resource type input filtering
-        resources = ["results", "qualifying"]
-        if target.lower() in resources:
+        if target.lower() in {"results", "qualifying"}:
             target = "Races"
 
         # if the provided dictionary is not a dictionary nor list, return None
-        if not isinstance(nested_dict, (dict, list)):
+        if not isinstance(nested, (dict, list)):
             print(f"Target {target} not found in current path: {path}")
             return None
 
         # If the argument is a list, retrieve the first value (will always be a dictionary)
-        if isinstance(nested_dict, list):
-            nested_dict = nested_dict[0] if nested_dict else None
+        if isinstance(nested, list):
+            nested = nested[0] if nested else None
 
         # get the key of the last entry of the dictionary
-        last_key = list(nested_dict)[-1] if nested_dict else None
+        last_key = next(reversed(nested), None) if nested else None
 
         # Check if the target has been found
         if last_key and last_key.lower() == target.lower():
             return path + [last_key]
 
-        # retrieve the value paired with the key
-        value = nested_dict.get(last_key) if nested_dict else None
-
-        if isinstance(value, (dict, list)):
-            return search_inner_keys(value, target, path + [last_key])
-
-        return None
+        return search_inner_keys(nested.get(last_key, {}), target, path + [last_key])
     return search_inner_keys(data.get("MRData", {}), resource_type)
 
 # Remove the inner data and return the common data structure
