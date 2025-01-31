@@ -4,7 +4,7 @@ import requests
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
-#  Logging configuration
+# Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Constants
@@ -88,7 +88,8 @@ def get_all_data(resource_type: str, use_cache: bool = True, **filters) -> Dict[
         return {"error": "Inner data path not identified in response"}
 
     # Extract metadata
-    all_data = remove_inner_data(data, inner_key_path)
+    inner_data = []
+    all_data = set_inner_data(data, inner_key_path, inner_data)
 
     # Set parameters
     params = {"limit": MAXIMUM_LIMIT, "offset": DEFAULT_OFFSET}
@@ -106,8 +107,10 @@ def get_all_data(resource_type: str, use_cache: bool = True, **filters) -> Dict[
             break
 
         # Append data to the inner key list
-        inner_paginated_data = find_inner_data(paginated_data, inner_key_path)
-        all_data = extend_inner_data(all_data, inner_key_path, inner_paginated_data)
+        inner_paginated_data = get_inner_data(paginated_data, inner_key_path)
+        inner_data = extend_inner_data(inner_data, inner_paginated_data)
+
+    all_data = set_inner_data(all_data, inner_key_path, inner_data)
 
     # Cache data if cache is enabled
     if use_cache:
@@ -186,24 +189,24 @@ def get_inner_key_path(data: Dict[str, Any], resource_type: str) -> Optional[Lis
         return search_inner_keys(nested.get(last_key, {}), target, path + [last_key])
     return search_inner_keys(data.get("MRData", {}), resource_type)
 
-# Remove the inner data and return the common data structure
-def remove_inner_data(data: Dict[str, Any], inner_key_path: List[str]) -> Dict[str, Any]:
+# Set the inner data and return the common data structure
+def set_inner_data(data: Dict[str, Any], inner_key_path: List[str], inner_data: Any) -> Dict[str, Any]:
     # Retrieve second to last inner data
-    inner_data = find_inner_data(data, inner_key_path, return_parent=True)
+    old_inner_data = get_inner_data(data, inner_key_path, return_parent=True)
 
     # Get last key
     last_key = inner_key_path[-1]
-    if isinstance(inner_data, list):
-        inner_data = inner_data[0] # Handles lists if present
-    # If last key is in inner data, replace it with an empty list
-    if last_key in inner_data.keys():
-        inner_data[last_key] = []
+    if isinstance(old_inner_data, list):
+        old_inner_data = old_inner_data[0] # Handles lists if present
+    # If last key is in inner data, replace it with the inner data
+    if last_key in old_inner_data.keys():
+        old_inner_data[last_key] = inner_data
 
     # Return the data
     return data
 
 # find the inner data and returns it
-def find_inner_data(data: Dict[str, Any], inner_key_path: List[str], return_parent: bool = False) -> Any:
+def get_inner_data(data: Dict[str, Any], inner_key_path: List[str], return_parent: bool = False) -> Any:
     # Retrieve initial inner data
     inner_data = data["MRData"]
     x = -1 if return_parent else len(inner_key_path)
@@ -218,16 +221,16 @@ def find_inner_data(data: Dict[str, Any], inner_key_path: List[str], return_pare
     return inner_data
 
 # Extend the inner data with additional provided data
-def extend_inner_data(data: Dict[str, Any], inner_key_path: List[str], additional_data: List[Any]) -> Dict[str, Any]:
+def extend_inner_data(data: Dict[str, Any], additional_data: List[Any]) -> Dict[str, Any]:
 
-    # Get second to last inner data
-    inner_data = find_inner_data(data, inner_key_path, False)
+    if not isinstance(data, list):
+        raise TypeError(f"Expected a list from data but found {type(data)}.")
 
-    if not isinstance(inner_data, list):
-        raise TypeError(f"Expected a list at {inner_key_path[-1]}, but found {type(inner_data)}.")
+    if not isinstance(additional_data, list):
+        raise TypeError(f"Expected a list from additional_data but found {type(additional_data)}.")
 
-    if inner_data and additional_data:
-        last_inner_entry = inner_data[-1]
+    if data and additional_data:
+        last_inner_entry = data[-1]
         first_additional_data = additional_data[0]
 
         common_keys = set(last_inner_entry.keys()) & set(first_additional_data.keys())
@@ -244,6 +247,5 @@ def extend_inner_data(data: Dict[str, Any], inner_key_path: List[str], additiona
 
                 additional_data = additional_data[1:]
 
-    inner_data.extend(additional_data)
-
+    data.extend(additional_data)
     return data
