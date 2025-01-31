@@ -224,7 +224,7 @@ def extend_inner_data(data: Dict[str, Any], inner_key_path: List[str], additiona
     inner_data = find_inner_data(data, inner_key_path, False)
 
     if not isinstance(inner_data, list):
-        raise TypeError(f"Expected a list at {inner_key_path[-1]}, but found {type(inner_data[inner_key_path[-1]])}.")
+        raise TypeError(f"Expected a list at {inner_key_path[-1]}, but found {type(inner_data)}.")
 
     if inner_data and additional_data:
         last_inner_entry = inner_data[-1]
@@ -236,7 +236,7 @@ def extend_inner_data(data: Dict[str, Any], inner_key_path: List[str], additiona
             matching_key = next(iter(common_keys))
 
             if last_inner_entry[matching_key] == first_additional_data[matching_key]:
-                for key in last_inner_entry.keys():
+                for key in last_inner_entry:
                     if isinstance(last_inner_entry[key], list) and isinstance(first_additional_data.get(key), list):
                         existing_values = {tuple(sorted(item.items())) for item in last_inner_entry[key]}
                         new_values = [item for item in first_additional_data[key] if tuple(sorted(item.items())) not in existing_values]
