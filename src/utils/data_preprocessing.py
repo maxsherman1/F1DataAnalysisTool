@@ -1,11 +1,7 @@
 import logging
-import sys
 import pandas as pd
 from pathlib import Path
 from typing import List
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-
 from api.jolpica_api import get_inner_data, get_all_data, get_inner_key_path, build_endpoint
 
 # Logging configuration
