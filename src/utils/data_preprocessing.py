@@ -2,12 +2,11 @@ import logging
 import sys
 import pandas as pd
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import List
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from api.jolpica_api import get_inner_data, get_all_data, get_inner_key_path, build_endpoint
-
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,21 +21,18 @@ def convert_to_dataframe(data: List) -> pd.DataFrame:
         return pd.DataFrame()
 
     try:
-        df = pd.DataFrame(data)
-        logging.info("Converted data into DataFrame with shape %s", df.shape)
-        return df
+        return pd.DataFrame(data)
     except Exception as e:
         logging.error("Error converting data to DataFrame: %s", str(e))
         return pd.DataFrame()
 
-def clean_data(resource_type, **filters) -> pd.DataFrame:
+def clean_data(resource_type: str, **filters) -> pd.DataFrame:
     data = get_all_data(resource_type, **filters)
     inner_key_path = get_inner_key_path(data, resource_type=resource_type)
     inner_data = get_inner_data(data, inner_key_path)
     return convert_to_dataframe(inner_data)
 
 def save_data(data: pd.DataFrame, file_path: Path) -> None:
-
     if data.empty:
         logging.warning("No data provided for saving.")
         return
@@ -47,14 +43,7 @@ def save_data(data: pd.DataFrame, file_path: Path) -> None:
     except Exception as e:
         logging.error("Error saving cleaned data: %s", str(e))
 
-def clean_and_save_data(resource_type, **filters):
+def clean_and_save_data(resource_type:str, **filters):
     data = clean_data(resource_type, **filters)
-    endpoint = build_endpoint(resource_type, **filters)
-    clean_file_path = CLEANED_DIR / f"{endpoint.replace('/', '_')}_cleaned.csv"
-    save_data(data=data, file_path=clean_file_path)
-
-def main():
-    clean_data(resource_type="circuits", season="2024")
-
-if __name__ == "__main__":
-    main()
+    endpoint = build_endpoint(resource_type, **filters).replace('/', '_')
+    save_data(data=data, file_path=CLEANED_DIR / f"{endpoint}_cleaned.csv")
