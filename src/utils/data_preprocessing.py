@@ -1,5 +1,4 @@
 import logging
-import json
 import sys
 import pandas as pd
 from pathlib import Path
@@ -7,16 +6,15 @@ from typing import Dict, Any, List
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from api.jolpica_api import get_inner_data, get_all_data, get_inner_key_path
+from api.jolpica_api import get_inner_data, get_all_data, get_inner_key_path, build_endpoint
 
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Define cache and processed directories
-PROCESSED_DIR = Path(__file__).resolve().parent.parent.parent / "data/processed"
-PROCESSED_DIR.mkdir(parents=True, exist_ok=True)  # Ensure the processed directory exists
-
+CLEANED_DIR = Path(__file__).resolve().parent.parent.parent / "data/cleaned"
+CLEANED_DIR.mkdir(parents=True, exist_ok=True)  # Ensure the processed directory exists
 
 def convert_to_dataframe(data: List) -> pd.DataFrame:
     if not data:
@@ -35,8 +33,25 @@ def clean_data(resource_type, **filters) -> pd.DataFrame:
     data = get_all_data(resource_type, **filters)
     inner_key_path = get_inner_key_path(data, resource_type=resource_type)
     inner_data = get_inner_data(data, inner_key_path)
-    df = convert_to_dataframe(inner_data)
-    print(df)
+    return convert_to_dataframe(inner_data)
+
+def save_data(data: pd.DataFrame, file_path: Path) -> None:
+
+    if data.empty:
+        logging.warning("No data provided for saving.")
+        return
+
+    try:
+        data.to_csv(file_path, index=False)
+        logging.info("Saved cleaned data to %s", file_path)
+    except Exception as e:
+        logging.error("Error saving cleaned data: %s", str(e))
+
+def clean_and_save_data(resource_type, **filters):
+    data = clean_data(resource_type, **filters)
+    endpoint = build_endpoint(resource_type, **filters)
+    clean_file_path = CLEANED_DIR / f"{endpoint.replace('/', '_')}_cleaned.csv"
+    save_data(data=data, file_path=clean_file_path)
 
 def main():
     clean_data(resource_type="circuits", season="2024")
