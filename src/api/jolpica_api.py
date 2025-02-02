@@ -1,6 +1,6 @@
 import logging
 import requests
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from pathlib import Path
 from cache_manager import cache_data, load_cache, is_cached
 from json_handler import get_inner_key_path, get_inner_data, set_inner_data, extend_inner_data
@@ -208,3 +208,8 @@ class JolpicaAPI:
             endpoint_parts.append(position)
 
         return "/".join(endpoint_parts)
+
+    def get_inner_data(self) -> List:
+        data = self.get_all_data()
+        inner_key_path = get_inner_key_path(data, resource_type=self.resource_type)
+        return get_inner_data(data, inner_key_path)
