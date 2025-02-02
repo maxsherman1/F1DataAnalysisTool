@@ -1,0 +1,8 @@
+requests==2.31.0          # For API interaction with Jolpica-F1
+pandas==2.1.2             # Data manipulation and preprocessing
+matplotlib==3.8.0         # Data visualization (interactive charts)
+plotly==5.15.0            # Interactive and time-series plots
+scipy==1.11.2             # Statistical functions (regression, correlation)
+statsmodels==0.14.0       # Advanced statistical modeling
+numpy==1.25.2             # Efficient numerical computations
+pytest==7.5.0             # Testing framework for unit and integration tests
