@@ -1,260 +1,172 @@
-import json
 import logging
 import requests
+from typing import Dict, Any, Optional
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from cache_manager import cache_data, load_cache, is_cached
+from json_handler import get_inner_key_path, get_inner_data, set_inner_data, extend_inner_data
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Constants
-BASE_URL = "https://api.jolpi.ca/ergast/f1/"
-CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "data/cache"
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
-DEFAULT_LIMIT = 30
-MAXIMUM_LIMIT = 100
-DEFAULT_OFFSET = 0
+class JolpicaAPI:
 
-def get_data(endpoint: str, params: Optional[Dict[str, Any]] = None, use_cache: bool = True) -> Dict[str, Any]:
-    """
-    Retrieves data from the Jolpica-F1 API with optional caching.
+    # Constants
+    BASE_URL = "https://api.jolpi.ca/ergast/f1/"
+    CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "data/cache"
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    DEFAULT_LIMIT = 30
+    MAXIMUM_LIMIT = 100
+    DEFAULT_OFFSET = 0
+    VALID_RESOURCE_TYPE = {
+        "circuits", "constructors", "constructorStandings", "drivers",
+        "driverStandings", "laps", "pitstops", "qualifying", "races",
+        "results", "seasons", "status"
+    }
 
-    :param endpoint: API endpoint
-    :param params: Query parameters for the API call (e.g., limit and offset)
-    :param use_cache: Whether to use cached data if available
-    :return: JSON response from the API
-    """
-    # Set default parameters if no parameters are provided
-    params = params or {"limit": DEFAULT_LIMIT, "offset": DEFAULT_OFFSET}
+    def __init__(self, resource_type: str, **filters):
+        if resource_type not in self.VALID_RESOURCE_TYPE:
+            raise ValueError(f"Invalid resource type: {resource_type}. Must be one of {list(self.VALID_RESOURCE_TYPE)}")
 
-    # Cache file name
-    cache_file = CACHE_DIR / f"{endpoint.replace('/', '_')}_{params['limit']}_{params['offset']}.json"
+        self.resource_type = resource_type
+        self.filters = {}
+        self.set_filters(filters)
 
-    # Return cached file if cache is enabled and cache file exists
-    if use_cache and is_cached(cache_file):
-        return load_cache(cache_file)
+    def set_filters(self, filters: Dict[str, Any]):
+        self.filters = filters
 
-    # Add endpoint to the base url
-    url = f"{BASE_URL}{endpoint}"
+    def get_filters(self) -> Dict[str, Any]:
+        return self.filters
 
-    # Make API call
-    try:
+    def set_filter(self, key: str, value: Any):
+        self.filters[key] = value
 
-        # Get API data and check for errors
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
+    def get_data(self, endpoint: str, params: Optional[Dict[str, Any]] = None, use_cache: bool = True) -> Dict[str, Any]:
+        """
+        Retrieves data from the Jolpica-F1 API with optional caching.
 
-        # Save data to cache file if cache is enabled
+        :param endpoint: API endpoint
+        :param params: Query parameters for the API call (e.g., limit and offset)
+        :param use_cache: Whether to use cached data if available
+        :return: JSON response from the API
+        """
+        # Set default parameters if no parameters are provided
+        params = params or {"limit": self.DEFAULT_LIMIT, "offset": self.DEFAULT_OFFSET}
+
+        # Cache file name
+        cache_file = self.CACHE_DIR / f"{endpoint.replace('/', '_')}_{params['limit']}_{params['offset']}.json"
+
+        # Return cached file if cache is enabled and cache file exists
+        if use_cache and is_cached(cache_file):
+            return load_cache(cache_file)
+
+        # Add endpoint to the base url
+        url = f"{self.BASE_URL}{endpoint}"
+
+        # Make API call
+        try:
+
+            # Get API data and check for errors
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+            # Save data to cache file if cache is enabled
+            if use_cache:
+                cache_data(cache_file, data)
+
+            # Return the response in JSON format
+            return data
+
+        # Error handling if an error occurs during data retrieval
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error retrieving data from {url} with params {params}: {e}")
+            return {"error": str(e)}
+
+    # Retrieve all data from endpoint using pagination
+    def get_all_data(self, use_cache: bool = True) -> Dict[str, Any]:
+
+        # Get data retrieval endpoint
+        endpoint = self.build_endpoint()
+
+        # return cache file if file is found in cache folder
+        cache_file = self.CACHE_DIR / f"{endpoint.replace('/', '_')}_all.json"
+
+        # Return cached file if cache is enabled and cache file exists
+        if use_cache and is_cached(cache_file):
+            return load_cache(cache_file)
+
+        # Retrieve initial data
+        data = self.get_data(endpoint, use_cache=False)
+
+        # Retrieve total number of datapoints if there are no errors during data retrieval
+        if "error" in data:
+            return data
+
+        # Retrieve total number of datapoints
+        total = int(data.get("MRData", {}).get("total", 0))
+
+        # Get the path of the inner key
+        inner_key_path = get_inner_key_path(data, self.resource_type)
+
+        # Error handling for inner key identification
+        if not inner_key_path:
+            return {"error": "Inner data path not identified in response"}
+
+        # Extract metadata
+        inner_data = []
+        all_data = set_inner_data(data, inner_key_path, inner_data)
+
+        # Set parameters
+        params = {"limit": self.MAXIMUM_LIMIT, "offset": self.DEFAULT_OFFSET}
+
+        # Pagination handler loop
+        for offset in range(0, total, params["limit"]):
+
+            # Set offset and retrieve data
+            params["offset"] = offset
+            paginated_data = self.get_data(endpoint, params, use_cache=False)
+
+            # Error handling
+            if "error" in paginated_data:
+                logging.warning(f"Error during pagination at offset {offset}")
+                break
+
+            # Append data to the inner key list
+            inner_paginated_data = get_inner_data(paginated_data, inner_key_path)
+            inner_data = extend_inner_data(inner_data, inner_paginated_data)
+
+        all_data = set_inner_data(all_data, inner_key_path, inner_data)
+
+        # Cache data if cache is enabled
         if use_cache:
-            cache_data(cache_file, data)
+            cache_data(cache_file, all_data)
 
-        # Return the response in JSON format
-        return data
+        # Return the paginated data
+        return all_data
 
-    # Error handling if an error occurs during data retrieval
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error retrieving data from {url} with params {params}: {e}")
-        return {"error": str(e)}
+    # Builds the endpoint URL dynamically based on filters
+    def build_endpoint(self) -> str:
+        endpoint_parts = []
 
-# Retrieve all data from endpoint using pagination
-def get_all_data(resource_type: str, use_cache: bool = True, **filters) -> Dict[str, Any]:
+        # Add season and round first if present
+        season = self.filters.pop("season", None)
+        round_number = self.filters.pop("round", None)
+        if season:
+            endpoint_parts.append(season)
+            if round_number:
+                endpoint_parts.append(round_number)
 
-    # Get data retrieval endpoint
-    endpoint = build_endpoint(resource_type, **filters)
+        # Add other filters dynamically excluding position
+        position = self.filters.pop("position", None)
+        for key, value in self.filters.items():
+            if value:
+                endpoint_parts.extend([key, value])
 
-    # return cache file if file is found in cache folder
-    cache_file = CACHE_DIR / f"{endpoint.replace('/', '_')}_all.json"
+        # Append resource type at the end if not already added
+        if self.resource_type not in endpoint_parts:
+            endpoint_parts.append(self.resource_type)
 
-    # Return cached file if cache is enabled and cache file exists
-    if use_cache and is_cached(cache_file):
-        return load_cache(cache_file)
+        if position:
+            endpoint_parts.append(position)
 
-    # Retrieve initial data
-    data = get_data(endpoint, use_cache=False)
-
-    # Retrieve total number of datapoints if there are no errors during data retrieval
-    if "error" in data:
-        return data
-
-    # Retrieve total number of datapoints
-    total = int(data.get("MRData", {}).get("total", 0))
-
-    # Get the path of the inner key
-    inner_key_path = get_inner_key_path(data, resource_type)
-
-    # Error handling for inner key identification
-    if not inner_key_path:
-        return {"error": "Inner data path not identified in response"}
-
-    # Extract metadata
-    inner_data = []
-    all_data = set_inner_data(data, inner_key_path, inner_data)
-
-    # Set parameters
-    params = {"limit": MAXIMUM_LIMIT, "offset": DEFAULT_OFFSET}
-
-    # Pagination handler loop
-    for offset in range(0, total, params["limit"]):
-
-        # Set offset and retrieve data
-        params["offset"] = offset
-        paginated_data = get_data(endpoint, params, use_cache=False)
-
-        # Error handling
-        if "error" in paginated_data:
-            logging.warning(f"Error during pagination at offset {offset}")
-            break
-
-        # Append data to the inner key list
-        inner_paginated_data = get_inner_data(paginated_data, inner_key_path)
-        inner_data = extend_inner_data(inner_data, inner_paginated_data)
-
-    all_data = set_inner_data(all_data, inner_key_path, inner_data)
-
-    # Cache data if cache is enabled
-    if use_cache:
-        cache_data(cache_file, all_data)
-
-    # Return the paginated data
-    return all_data
-
-# Cache data function (does not check if cache folder is present)
-def cache_data(file_path: Path, data: Dict[str, Any]) -> None:
-    with open(file_path, "w") as f:
-        json.dump(data, f)
-    logging.info(f"Data cached to {file_path} successfully.")
-
-# Load data function (does not check if cache file is present)
-def load_cache(file_path: Path) -> Dict[str, Any]:
-    with file_path.open("r") as f:
-        logging.info(f"Data loaded from {file_path} successfully.")
-        return json.load(f)
-
-# Checks if cache file is in the cache directory
-def is_cached(file_path: Path) -> bool:
-    return file_path.exists()
-
-# Builds the endpoint URL dynamically based on filters
-def build_endpoint(resource_type: str, **filters) -> str:
-    endpoint_parts = []
-
-    # Add season and round first if present
-    season = filters.pop("season", None)
-    round_number = filters.pop("round", None)
-    if season:
-        endpoint_parts.append(season)
-        if round_number:
-            endpoint_parts.append(round_number)
-
-    # Add other filters dynamically excluding position
-    position = filters.pop("position", None)
-    for key, value in filters.items():
-        if value:
-            endpoint_parts.extend([key, value])
-
-    # Append resource type at the end if not already added
-    if resource_type not in endpoint_parts:
-        endpoint_parts.append(resource_type)
-
-    if position:
-        endpoint_parts.append(position)
-
-    return "/".join(endpoint_parts)
-
-def get_inner_key_path(data: Dict[str, Any], resource_type: str) -> Optional[List[str]]:
-    def search_inner_keys(nested: Any, target: str, path: Optional[List[str]] = None) -> Optional[List[str]]:
-        path = path or []
-
-        # Resource type input filtering
-        if target.lower() in {"results", "qualifying"}:
-            target = "Races"
-
-        # if the provided dictionary is not a dictionary nor list, return None
-        if not isinstance(nested, (dict, list)):
-            print(f"Target {target} not found in current path: {path}")
-            return None
-
-        # If the argument is a list, retrieve the first value (will always be a dictionary)
-        if isinstance(nested, list):
-            nested = nested[0] if nested else None
-
-        # get the key of the last entry of the dictionary
-        last_key = next(reversed(nested), None) if nested else None
-
-        # Check if the target has been found
-        if last_key and last_key.lower() == target.lower():
-            return path + [last_key]
-
-        return search_inner_keys(nested.get(last_key, {}), target, path + [last_key])
-    return search_inner_keys(data.get("MRData", {}), resource_type)
-
-# Set the inner data and return the common data structure
-def set_inner_data(data: Dict[str, Any], inner_key_path: List[str], inner_data: Any) -> Dict[str, Any]:
-    # Retrieve second to last inner data
-    old_inner_data = get_inner_data(data, inner_key_path, return_parent=True)
-
-    # Get last key
-    last_key = inner_key_path[-1]
-    if isinstance(old_inner_data, list):
-        old_inner_data = old_inner_data[0] # Handles lists if present
-    # If last key is in inner data, replace it with the inner data
-    if last_key in old_inner_data.keys():
-        old_inner_data[last_key] = inner_data
-
-    # Return the data
-    return data
-
-# find the inner data and returns it
-def get_inner_data(data: Dict[str, Any], inner_key_path: List[str], return_parent: bool = False) -> List:
-    # Retrieve initial inner data
-    inner_data = data["MRData"]
-    x = -1 if return_parent else len(inner_key_path)
-
-    # Loop through the path list until the final value has been found
-    for key in inner_key_path[:x]:
-        if isinstance(inner_data, list):
-            inner_data = inner_data[0]
-        inner_data = inner_data[key]
-
-    # Return inner data
-    return inner_data
-
-# Extend the inner data with additional provided data
-def extend_inner_data(data: List, additional_data: List) -> List:
-
-    # Data validation
-    if not isinstance(data, list) or not isinstance(additional_data, list):
-        raise TypeError(f"Both data arguments must be lists for appending.")
-
-    if not data or not additional_data:
-        return data + additional_data
-
-    # Retrieve the entries that required concatenating
-    last_inner_entry = data[-1]
-    first_additional_entry = additional_data[0]
-
-    # Find the keys present in both entries
-    common_keys = set(last_inner_entry.keys()) & set(first_additional_entry.keys())
-
-    if not common_keys:
-        data.extend(additional_data)
-        return data
-
-    common_data_found = any(last_inner_entry[key] == first_additional_entry[key] for key in common_keys)
-
-    if not common_data_found:
-        data.extend(additional_data)
-        return data
-
-    unique_data_keys = {key for key in common_keys if last_inner_entry[key] != first_additional_entry[key]}
-
-    for key in unique_data_keys:
-        existing_values = {tuple(sorted(item.items())) for item in last_inner_entry[key]}
-        new_values = [item for item in first_additional_entry[key] if tuple(sorted(item.items())) not in existing_values]
-        last_inner_entry[key].extend(new_values)
-
-    additional_data = additional_data[1:]  # Skip the first additional entry
-
-    data.extend(additional_data) if additional_data else None
-    return data
+        return "/".join(endpoint_parts)
