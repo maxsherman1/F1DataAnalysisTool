@@ -14,30 +14,68 @@ class JolpicaAPI:
     BASE_URL = "https://api.jolpi.ca/ergast/f1/"
     CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "data/cache"
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Parameter constants
     DEFAULT_LIMIT = 30
     MAXIMUM_LIMIT = 100
     DEFAULT_OFFSET = 0
-    VALID_RESOURCE_TYPE = {
-        "circuits", "constructors", "constructorStandings", "drivers",
-        "driverStandings", "laps", "pitstops", "qualifying", "races",
-        "results", "seasons", "status"
+
+    # Resource type and filter validation
+    VALID_RESOURCE_TYPES = {
+        "circuits": {"optional": ["season", "round", "constructors", "drivers", "fastest", "grid", "results", "status"]},
+        "constructors": {"optional": ["season", "round", "circuits", "drivers", "fastest", "grid", "results", "status"]},
+        "constructorStandings": {"mandatory": ["season"], "optional": ["round", "constructors", "position"]},
+        "drivers": {"optional": ["season", "round", "circuits", "constructors", "fastest", "grid", "results", "status"]},
+        "driverStandings": {"mandatory": ["season"], "optional": ["round", "drivers", "position"]},
+        "laps": {"mandatory": ["season", "round"], "optional": ["drivers", "constructors", "laps"]},
+        "pitstops": {"mandatory": ["season", "round"], "optional": ["drivers", "laps", "pitstops"]},
+        "qualifying": {"optional": ["season", "round", "circuits", "constructors", "drivers", "grid", "fastest", "status"]},
+        "races": {"optional": ["season", "round", "circuits", "constructors", "drivers", "grid", "status"]},
+        "results": {"optional": ["season", "round", "circuits", "constructors", "drivers", "fastest", "grid", "status"]},
+        "seasons": {"optional": ["season", "circuits", "constructors", "drivers", "grid", "status"]},
+        "sprint": {"optional": ["season", "round"]},
+        "status": {"optional": ["status", "season", "round", "circuits", "constructors", "drivers", "results"]}
     }
 
     def __init__(self, resource_type: str, **filters):
-        if resource_type not in self.VALID_RESOURCE_TYPE:
-            raise ValueError(f"Invalid resource type: {resource_type}. Must be one of {list(self.VALID_RESOURCE_TYPE)}")
 
+        # Input validation
+        if resource_type not in self.VALID_RESOURCE_TYPES:
+            raise ValueError(f"Invalid resource type: {resource_type}. Must be one of {list(self.VALID_RESOURCE_TYPES.keys())}")
+
+        # Set instance variables
         self.resource_type = resource_type
         self.filters = {}
         self.set_filters(filters)
 
+    # Set all the filters provided
     def set_filters(self, filters: Dict[str, Any]):
+        valid_filters = self.VALID_RESOURCE_TYPES[self.resource_type]
+        mandatory = valid_filters.get("mandatory", [])
+        optional = valid_filters.get("optional", [])
+
+        # Check mandatory filters
+        for key in mandatory:
+            if key not in filters:
+                raise ValueError(f"Invalid filter: {key}. Must be one of {mandatory}")
+
+        # Check other filters
+        for key in filters.keys():
+            if key not in mandatory + optional:
+                raise ValueError(f"Invalid filter {key}. Must be one of {mandatory}")
+
         self.filters = filters
 
+    # Get all filters
     def get_filters(self) -> Dict[str, Any]:
         return self.filters
 
+    # Set a specific filter
     def set_filter(self, key: str, value: Any):
+
+        valid_filters = self.VALID_RESOURCE_TYPES[self.resource_type]
+        if key not in valid_filters.get("mandatory", []) + valid_filters.get("optional", []):
+            raise ValueError(f"Invalid filter: {key}. Not allowed for resource type '{self.resource_type}'.")
         self.filters[key] = value
 
     def get_data(self, endpoint: str, params: Optional[Dict[str, Any]] = None, use_cache: bool = True) -> Dict[str, Any]:
