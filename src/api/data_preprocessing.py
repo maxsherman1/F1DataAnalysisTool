@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 from pathlib import Path
 from typing import List
-from api.jolpica_api import get_inner_data, get_all_data, get_inner_key_path, build_endpoint
+from api.jolpica_api import JolpicaAPI
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,13 +22,6 @@ def convert_to_dataframe(data: List) -> pd.DataFrame:
         logging.error("Error converting data to DataFrame: %s", str(e))
         return pd.DataFrame()
 
-# Retrieves data and cleans it, return the pandas dataframe
-def clean_data(resource_type: str, **filters) -> pd.DataFrame:
-    data = get_all_data(resource_type, **filters)
-    inner_key_path = get_inner_key_path(data, resource_type=resource_type)
-    inner_data = get_inner_data(data, inner_key_path)
-    return convert_to_dataframe(inner_data)
-
 # Save the dataframe to the file path
 def save_data(data: pd.DataFrame, file_path: Path) -> None:
     if data.empty:
@@ -41,6 +34,7 @@ def save_data(data: pd.DataFrame, file_path: Path) -> None:
         logging.error("Error saving cleaned data: %s", str(e))
 
 def clean_and_save_data(resource_type:str, **filters):
-    data = clean_data(resource_type, **filters)
-    endpoint = build_endpoint(resource_type, **filters).replace('/', '_')
-    save_data(data=data, file_path=CLEANED_DIR / f"{endpoint}_cleaned.csv")
+    jolpica_api = JolpicaAPI(resource_type, **filters)
+    data = convert_to_dataframe(jolpica_api.get_inner_data())
+    file_name = f"{jolpica_api.build_endpoint().replace('/', '_')}_cleaned.csv"
+    save_data(data=data, file_path=CLEANED_DIR / file_name)
