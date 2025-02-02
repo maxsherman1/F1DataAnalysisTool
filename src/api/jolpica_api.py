@@ -38,48 +38,98 @@ class JolpicaAPI:
     }
 
     # Init function validating resource type and filters
-    def __init__(self, resource_type: str, **filters):
-
+    def __init__(self, resource_type: str, params: Optional[Dict[str, Any]] = None, filters: Optional[Dict[str, Any]] = None):
         # Input validation
         if resource_type not in self.VALID_RESOURCE_TYPES:
             raise ValueError(f"Invalid resource type: {resource_type}. Must be one of {list(self.VALID_RESOURCE_TYPES.keys())}")
 
         # Set instance variables
-        self.resource_type = resource_type
+        self.params = {}
+        if params is not None:
+            self.set_params(params)
+        else:
+            self.set_params({"limit": self.DEFAULT_LIMIT, "offset": self.DEFAULT_OFFSET})
+
+        self.resource_type = None
+        self.set_resource_type(resource_type)
+
         self.filters = {}
-        self.set_filters(filters)
+        if filters is not None:
+            self.set_filters(filters)
+
+        self.endpoint = None
+        self.set_endpoint()
+
+    def set_params(self, params: Dict[str, Any]) -> None:
+        self.params = params
+
+    def get_params(self) -> Dict[str, Any]:
+        return self.params
+
+    def set_resource_type(self, resource_type: str) -> None:
+        self.resource_type = resource_type
+
+    def get_resource_type(self) -> str:
+        return self.resource_type
 
     # Set all the filters provided
-    def set_filters(self, filters: Dict[str, Any]):
-        valid_filters = self.VALID_RESOURCE_TYPES[self.resource_type]
+    def set_filters(self, filters: Dict[str, Any]) -> None:
+        # Get mandatory and optional filters for the resource type
+        valid_filters = self.VALID_RESOURCE_TYPES[self.get_resource_type()]
         mandatory = valid_filters.get("mandatory", [])
         optional = valid_filters.get("optional", [])
 
-        # Check mandatory filters
+        # Check mandatory filters to see if they are present
         for key in mandatory:
             if key not in filters:
-                raise ValueError(f"Invalid filter: {key}. Must be one of {mandatory}")
+                raise ValueError(f"Mandatory filter '{key}' not provided in {filters}")
 
-        # Check other filters
+        # Check other filters to see if they are allowed for this resource typee
         for key in filters.keys():
             if key not in mandatory + optional:
-                raise ValueError(f"Invalid filter {key}. Must be one of {mandatory}")
+                raise ValueError(f"Invalid filter {key}")
 
+        # Set the filters
         self.filters = filters
 
     # Get all filters
     def get_filters(self) -> Dict[str, Any]:
         return self.filters
 
-    # Set a specific filter
-    def set_filter(self, key: str, value: Any):
+    # Set the endpoint of the API request
+    def set_endpoint(self) -> None:
+        endpoint_parts = []
+        filters = self.get_filters().copy()
 
-        valid_filters = self.VALID_RESOURCE_TYPES[self.resource_type]
-        if key not in valid_filters.get("mandatory", []) + valid_filters.get("optional", []):
-            raise ValueError(f"Invalid filter: {key}. Not allowed for resource type '{self.resource_type}'.")
-        self.filters[key] = value
+        # Add season and round first if present
+        season = filters.pop("season", None)
+        round_number = filters.pop("round", None)
+        if season:
+            endpoint_parts.append(season)
+            if round_number:
+                endpoint_parts.append(round_number)
 
-    def get_data(self, endpoint: str, params: Optional[Dict[str, Any]] = None, use_cache: bool = True) -> Dict[str, Any]:
+        # Add other filters dynamically excluding position
+        position = filters.pop("position", None)
+        for key, value in filters.items():
+            if value:
+                endpoint_parts.extend([key, value])
+
+        # Append resource type at the end if not already added
+        if self.get_resource_type() not in endpoint_parts:
+            endpoint_parts.append(self.get_resource_type())
+
+        if position:
+            endpoint_parts.append(position)
+
+        self.endpoint = "/".join(endpoint_parts)
+
+    # Get endpoint
+    def get_endpoint(self) -> str:
+        return self.endpoint
+
+
+    def get_data(self, use_cache: bool = True) -> Dict[str, Any]:
         """
         Retrieves data from the Jolpica-F1 API with optional caching.
 
@@ -88,54 +138,43 @@ class JolpicaAPI:
         :param use_cache: Whether to use cached data if available
         :return: JSON response from the API
         """
-        # Set default parameters if no parameters are provided
-        params = params or {"limit": self.DEFAULT_LIMIT, "offset": self.DEFAULT_OFFSET}
-
-        # Cache file name
-        cache_file = self.CACHE_DIR / f"{endpoint.replace('/', '_')}_{params['limit']}_{params['offset']}.json"
 
         # Return cached file if cache is enabled and cache file exists
-        if use_cache and is_cached(cache_file):
-            return load_cache(cache_file)
+        if use_cache and is_cached(self.get_cache_file_name_params()):
+            return load_cache(self.get_cache_file_name_params())
 
         # Add endpoint to the base url
-        url = f"{self.BASE_URL}{endpoint}"
+        url = f"{self.BASE_URL}{self.get_endpoint()}"
 
         # Make API call
         try:
 
             # Get API data and check for errors
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=self.get_params())
             response.raise_for_status()
             data = response.json()
 
             # Save data to cache file if cache is enabled
             if use_cache:
-                cache_data(cache_file, data)
+                cache_data(self.get_cache_file_name_params(), data)
 
             # Return the response in JSON format
             return data
 
         # Error handling if an error occurs during data retrieval
         except requests.exceptions.RequestException as e:
-            logging.error(f"Error retrieving data from {url} with params {params}: {e}")
+            logging.error(f"Error retrieving data from {url} with params {self.get_params()}: {e}")
             return {"error": str(e)}
 
     # Retrieve all data from endpoint using pagination
     def get_all_data(self, use_cache: bool = True) -> Dict[str, Any]:
 
-        # Get data retrieval endpoint
-        endpoint = self.build_endpoint()
-
-        # return cache file if file is found in cache folder
-        cache_file = self.CACHE_DIR / f"{endpoint.replace('/', '_')}_all.json"
-
         # Return cached file if cache is enabled and cache file exists
-        if use_cache and is_cached(cache_file):
-            return load_cache(cache_file)
+        if use_cache and is_cached(self.get_cache_file_name_all()):
+            return load_cache(self.get_cache_file_name_all())
 
         # Retrieve initial data
-        data = self.get_data(endpoint, use_cache=False)
+        data = self.get_data(use_cache=False)
 
         # Retrieve total number of datapoints if there are no errors during data retrieval
         if "error" in data:
@@ -145,7 +184,7 @@ class JolpicaAPI:
         total = int(data.get("MRData", {}).get("total", 0))
 
         # Get the path of the inner key
-        inner_key_path = get_inner_key_path(data, self.resource_type)
+        inner_key_path = get_inner_key_path(data, self.get_resource_type())
 
         # Error handling for inner key identification
         if not inner_key_path:
@@ -156,14 +195,14 @@ class JolpicaAPI:
         all_data = set_inner_data(data, inner_key_path, inner_data)
 
         # Set parameters
-        params = {"limit": self.MAXIMUM_LIMIT, "offset": self.DEFAULT_OFFSET}
+        self.set_params({"limit": self.MAXIMUM_LIMIT, "offset": self.DEFAULT_OFFSET})
 
         # Pagination handler loop
-        for offset in range(0, total, params["limit"]):
+        for offset in range(0, total, self.get_params()["limit"]):
 
             # Set offset and retrieve data
-            params["offset"] = offset
-            paginated_data = self.get_data(endpoint, params, use_cache=False)
+            self.set_params({"limit": self.MAXIMUM_LIMIT, "offset": offset})
+            paginated_data = self.get_data(use_cache=False)
 
             # Error handling
             if "error" in paginated_data:
@@ -178,40 +217,23 @@ class JolpicaAPI:
 
         # Cache data if cache is enabled
         if use_cache:
-            cache_data(cache_file, all_data)
+            cache_data(self.get_cache_file_name_all(), all_data)
 
         # Return the paginated data
         return all_data
 
-    # Builds the endpoint URL dynamically based on filters
-    def build_endpoint(self) -> str:
-        endpoint_parts = []
 
-        # Add season and round first if present
-        season = self.filters.pop("season", None)
-        round_number = self.filters.pop("round", None)
-        if season:
-            endpoint_parts.append(season)
-            if round_number:
-                endpoint_parts.append(round_number)
-
-        # Add other filters dynamically excluding position
-        position = self.filters.pop("position", None)
-        for key, value in self.filters.items():
-            if value:
-                endpoint_parts.extend([key, value])
-
-        # Append resource type at the end if not already added
-        if self.resource_type not in endpoint_parts:
-            endpoint_parts.append(self.resource_type)
-
-        if position:
-            endpoint_parts.append(position)
-
-        return "/".join(endpoint_parts)
-
-    # Get inner data function
+    # Get inner data function using the JSON handler
     def get_inner_data(self) -> List:
         data = self.get_all_data()
-        inner_key_path = get_inner_key_path(data, resource_type=self.resource_type)
+        inner_key_path = get_inner_key_path(data, resource_type=self.get_resource_type())
         return get_inner_data(data, inner_key_path)
+
+    def get_cache_file_name_params(self) -> Path:
+        return self.CACHE_DIR / f"{self.get_endpoint().replace('/', '_')}_{self.get_params()['limit']}_{self.get_params()['offset']}.json"
+
+    def get_cache_file_name_all(self) -> Path:
+        return self.CACHE_DIR / f"{self.get_endpoint().replace('/', '_')}_all.json"
+
+    def get_cleaned_file_name(self) -> str:
+        return f"{self.get_endpoint().replace('/', '_')}_cleaned.csv"
