@@ -37,6 +37,7 @@ class JolpicaAPI:
         "status": {"optional": ["status", "season", "round", "circuits", "constructors", "drivers", "results"]}
     }
 
+    # Init function validating resource type and filters
     def __init__(self, resource_type: str, **filters):
 
         # Input validation
@@ -209,6 +210,7 @@ class JolpicaAPI:
 
         return "/".join(endpoint_parts)
 
+    # Get inner data function
     def get_inner_data(self) -> List:
         data = self.get_all_data()
         inner_key_path = get_inner_key_path(data, resource_type=self.resource_type)
