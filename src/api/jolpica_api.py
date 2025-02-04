@@ -1,8 +1,8 @@
 import logging
 import requests
-import cache_manager
-import json_handler
-import data_preprocessing as dp
+import api.cache_manager as cache_manager
+import api.json_handler as json_handler
+import api.data_preprocessing as dp
 import pandas as pd
 from typing import Dict, Any, List, Optional
 from pathlib import Path
