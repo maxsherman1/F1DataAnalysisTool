@@ -54,7 +54,9 @@ def get_inner_data(data: Dict[str, Any], inner_key_path: List[str], return_paren
     for key in inner_key_path[:x]:
         if isinstance(inner_data, list):
             inner_data = inner_data[0]
-        inner_data = inner_data[key]
+
+        if isinstance(inner_data, dict) and key in inner_data:
+            inner_data = inner_data[key]
 
     # Return inner data
     return inner_data
