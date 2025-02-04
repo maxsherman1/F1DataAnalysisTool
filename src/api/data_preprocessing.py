@@ -2,7 +2,6 @@ import logging
 import pandas as pd
 from pathlib import Path
 from typing import List, Dict
-from api.jolpica_api import JolpicaAPI
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,13 +25,14 @@ def convert_to_dataframe(data: List) -> pd.DataFrame:
         return pd.DataFrame()
 
 # Save the dataframe to the file path
-def save_data(data: pd.DataFrame, file_path: Path) -> None:
+def save_to_csv(data: pd.DataFrame, file_name: str) -> None:
     # Check if there is data to save
     if data.empty:
         logging.warning("No data provided for saving.")
         return
 
-    # Save data to csv at file_path
+    # Save data to csv
+    file_path = CLEANED_DIR / file_name
     try:
         data.to_csv(file_path, index=False)
         logging.info("Saved cleaned data to %s", file_path)
@@ -40,11 +40,23 @@ def save_data(data: pd.DataFrame, file_path: Path) -> None:
     except Exception as e:
         logging.error("Error saving cleaned data: %s", str(e))
 
-# Retrieve, preprocess, convert, and save the data to csv
-def convert_and_save_data(jolpica_api: JolpicaAPI) -> None:
-    file_name = jolpica_api.get_cleaned_file_name()
-    data = preprocess_data(jolpica_api.get_inner_data())
-    save_data(convert_to_dataframe(data), CLEANED_DIR / file_name)
+# Load data from the csv file
+def load_from_csv(file_name: str) -> pd.DataFrame:
+    file_path = CLEANED_DIR / file_name
+    # Load from filepath
+    try:
+        data = pd.read_csv(file_path)
+        logging.info("Loaded cleaned data from %s", file_path)
+        return data
+    # Log error if csv loading fails
+    except Exception as e:
+        logging.error("Error loading cleaned data from csv: %s", str(e))
+        return pd.DataFrame()
+
+# Checks if csv file is loaded
+def is_loaded_csv(file_name: str) -> bool:
+    file_path = CLEANED_DIR / file_name
+    return file_path.exists()
 
 # Function that removes any nested dictionaries by flattening the inner data.
 def preprocess_data(inner_data: List[Dict]) -> List[Dict]:
