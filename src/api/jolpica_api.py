@@ -156,7 +156,7 @@ class JolpicaAPI:
 
             # Save data to cache file if cache is enabled
             if use_cache:
-                cache_data(self.get_cache_file_name_params(), data)
+                cache_data(self.get_cache_file_path_params(), data)
 
             # Return the response in JSON format
             return data
@@ -170,8 +170,8 @@ class JolpicaAPI:
     def get_all_data(self, use_cache: bool = True) -> Dict[str, Any]:
 
         # Return cached file if cache is enabled and cache file exists
-        if use_cache and is_cached(self.get_cache_file_name_all()):
-            return load_cache(self.get_cache_file_name_all())
+        if use_cache and is_cached(self.get_cache_file_path_all()):
+            return load_cache(self.get_cache_file_path_all())
 
         # Retrieve initial data
         data = self.get_data(use_cache=False)
@@ -229,11 +229,14 @@ class JolpicaAPI:
         inner_key_path = get_inner_key_path(data, resource_type=self.get_resource_type())
         return get_inner_data(data, inner_key_path)
 
-    def get_cache_file_name_params(self) -> Path:
-        return self.CACHE_DIR / f"{self.get_endpoint().replace('/', '_')}_{self.get_params()['limit']}_{self.get_params()['offset']}.json"
+    def get_cache_file_path_params(self) -> Path:
+        return self.CACHE_DIR / f"{self.get_file_name()}_{self.get_params()['limit']}_{self.get_params()['offset']}.json"
 
-    def get_cache_file_name_all(self) -> Path:
-        return self.CACHE_DIR / f"{self.get_endpoint().replace('/', '_')}_all.json"
+    def get_cache_file_path_all(self) -> Path:
+        return self.CACHE_DIR / f"{self.get_file_name()}_all.json"
 
     def get_cleaned_file_name(self) -> str:
-        return f"{self.get_endpoint().replace('/', '_')}_cleaned.csv"
+        return f"{self.get_file_name()}_cleaned.csv"
+
+    def get_file_name(self) -> str:
+        return f"{self.get_endpoint().replace('/', '_')}"
