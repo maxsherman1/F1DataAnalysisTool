@@ -217,7 +217,7 @@ class JolpicaAPI:
 
         # Cache data if cache is enabled
         if use_cache:
-            cache_data(self.get_cache_file_name_all(), all_data)
+            cache_data(self.get_cache_file_path_all(), all_data)
 
         # Return the paginated data
         return all_data
