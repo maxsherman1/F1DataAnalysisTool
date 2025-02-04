@@ -1,9 +1,11 @@
 import logging
 import requests
+import cache_manager
+import json_handler
+import data_preprocessing as dp
+import pandas as pd
 from typing import Dict, Any, List, Optional
 from pathlib import Path
-from cache_manager import cache_data, load_cache, is_cached
-from json_handler import get_inner_key_path, get_inner_data, set_inner_data, extend_inner_data
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -133,15 +135,13 @@ class JolpicaAPI:
         """
         Retrieves data from the Jolpica-F1 API with optional caching.
 
-        :param endpoint: API endpoint
-        :param params: Query parameters for the API call (e.g., limit and offset)
         :param use_cache: Whether to use cached data if available
         :return: JSON response from the API
         """
 
         # Return cached file if cache is enabled and cache file exists
-        if use_cache and is_cached(self.get_cache_file_name_params()):
-            return load_cache(self.get_cache_file_name_params())
+        if use_cache and cache_manager.is_cached(self.get_cache_file_path_params()):
+            return cache_manager.load_cache(self.get_cache_file_path_params())
 
         # Add endpoint to the base url
         url = f"{self.BASE_URL}{self.get_endpoint()}"
@@ -156,7 +156,7 @@ class JolpicaAPI:
 
             # Save data to cache file if cache is enabled
             if use_cache:
-                cache_data(self.get_cache_file_path_params(), data)
+                cache_manager.cache_data(self.get_cache_file_path_params(), data)
 
             # Return the response in JSON format
             return data
@@ -170,8 +170,8 @@ class JolpicaAPI:
     def get_all_data(self, use_cache: bool = True) -> Dict[str, Any]:
 
         # Return cached file if cache is enabled and cache file exists
-        if use_cache and is_cached(self.get_cache_file_path_all()):
-            return load_cache(self.get_cache_file_path_all())
+        if use_cache and cache_manager.is_cached(self.get_cache_file_path_all()):
+            return cache_manager.load_cache(self.get_cache_file_path_all())
 
         # Retrieve initial data
         data = self.get_data(use_cache=False)
@@ -184,7 +184,7 @@ class JolpicaAPI:
         total = int(data.get("MRData", {}).get("total", 0))
 
         # Get the path of the inner key
-        inner_key_path = get_inner_key_path(data, self.get_resource_type())
+        inner_key_path = json_handler.get_inner_key_path(data, self.get_resource_type())
 
         # Error handling for inner key identification
         if not inner_key_path:
@@ -192,7 +192,7 @@ class JolpicaAPI:
 
         # Extract metadata
         inner_data = []
-        all_data = set_inner_data(data, inner_key_path, inner_data)
+        all_data = json_handler.set_inner_data(data, inner_key_path, inner_data)
 
         # Set parameters
         self.set_params({"limit": self.MAXIMUM_LIMIT, "offset": self.DEFAULT_OFFSET})
@@ -210,14 +210,14 @@ class JolpicaAPI:
                 break
 
             # Append data to the inner key list
-            inner_paginated_data = get_inner_data(paginated_data, inner_key_path)
-            inner_data = extend_inner_data(inner_data, inner_paginated_data)
+            inner_paginated_data = json_handler.get_inner_data(paginated_data, inner_key_path)
+            inner_data = json_handler.extend_inner_data(inner_data, inner_paginated_data)
 
-        all_data = set_inner_data(all_data, inner_key_path, inner_data)
+        all_data = json_handler.set_inner_data(all_data, inner_key_path, inner_data)
 
         # Cache data if cache is enabled
         if use_cache:
-            cache_data(self.get_cache_file_path_all(), all_data)
+            cache_manager.cache_data(self.get_cache_file_path_all(), all_data)
 
         # Return the paginated data
         return all_data
@@ -226,8 +226,8 @@ class JolpicaAPI:
     # Get inner data function using the JSON handler
     def get_inner_data(self) -> List:
         data = self.get_all_data()
-        inner_key_path = get_inner_key_path(data, resource_type=self.get_resource_type())
-        return get_inner_data(data, inner_key_path)
+        inner_key_path = json_handler.get_inner_key_path(data, resource_type=self.get_resource_type())
+        return json_handler.get_inner_data(data, inner_key_path)
 
     def get_cache_file_path_params(self) -> Path:
         return self.CACHE_DIR / f"{self.get_file_name()}_{self.get_params()['limit']}_{self.get_params()['offset']}.json"
@@ -240,3 +240,14 @@ class JolpicaAPI:
 
     def get_file_name(self) -> str:
         return f"{self.get_endpoint().replace('/', '_')}"
+
+    def get_cleaned_data(self) -> pd.DataFrame:
+        file_name = self.get_cleaned_file_name()
+
+        if dp.is_loaded_csv(file_name):
+            return dp.load_from_csv(file_name)
+
+        flattened_data = dp.preprocess_data(self.get_inner_data())
+        data = dp.convert_to_dataframe(flattened_data)
+        dp.save_to_csv(data, file_name)
+        return data
