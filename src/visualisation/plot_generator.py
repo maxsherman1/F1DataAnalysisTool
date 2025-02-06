@@ -69,13 +69,16 @@ def plot_scatter_chart(df, x_col, y_col, title):
     plt.show()
 
 
-def plot_box_chart(df, x_col, y_col, title):
+def plot_box_chart(df, x_col, title, y_col=None, hue=None, dodge=True, whis=1.5):
+    plt.style.use("dark_background")  # Set dark background
     plt.figure(figsize=(10, 5))
-    sns.boxplot(data=df, x=x_col, y=y_col)
-    plt.title(title)
-    plt.xlabel(x_col)
-    plt.ylabel(y_col)
-    plt.xticks(rotation=45)
+    sns.boxplot(data=df, x=x_col, y=y_col, hue=hue, dodge=dodge, whis=whis)
+    plt.title(title, fontsize=16, color='white')
+    plt.xlabel(x_col, fontsize=12, color='white')
+    plt.ylabel(y_col if y_col else '', fontsize=12, color='white')
+    plt.xticks(rotation=45, color='white')
+    plt.yticks(color='white')
+    plt.grid(color="gray", linestyle="--", linewidth=0.5)
     plt.show()
 
 
