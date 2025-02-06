@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
+
 
 def plot_line_chart(df, x_col, y_col, title):
     plt.figure(figsize=(10, 5))
@@ -8,6 +10,43 @@ def plot_line_chart(df, x_col, y_col, title):
     plt.xlabel(x_col)
     plt.ylabel(y_col)
     plt.grid()
+    plt.show()
+
+# plots a line chart lap vs position grouped by driver, requires lap data argument
+def plot_position_chart(df, title="F1 Race Lap Chart"):
+
+    # Data filtering retrieves lap number, position, and driver
+    lap_data = []
+    for i in range(1, 21):  # Assuming 20 drivers
+        driver_col = f"Timings.{i}.driverId"
+        position_col = f"Timings.{i}.position"
+        # Data validation
+        if driver_col in df.columns and position_col in df.columns:
+            for lap in range(len(df)):
+                lap_data.append({
+                    "lap": df.loc[lap, "number"],  # Lap number
+                    "driver": df.loc[lap, driver_col],  # Driver name
+                    "position": df.loc[lap, position_col]  # Position on that lap
+                })
+    df = pd.DataFrame(lap_data)
+
+    plt.figure(figsize=(14, 8))
+    plt.style.use("dark_background")  # Set dark theme
+
+    # Sort to ensure correct plotting
+    df = df.sort_values(by=["driver", "lap"])
+
+    # Plot each driver's position over time
+    sns.lineplot(x=df["lap"], y=df["position"], hue=df["driver"], linewidth=2, marker="o", alpha=1)
+
+    # Formatting
+    plt.xlabel("Lap Number", fontsize=12, color="black", fontweight="bold")
+    plt.ylabel("Position (Lower is Better)", fontsize=12, color="black", fontweight="bold")
+    plt.title(title, fontsize=16, color="black", fontweight="bold")
+    plt.legend(title="Driver", bbox_to_anchor=(1, 1), loc='upper left', fontsize=10)
+
+    plt.gca().invert_yaxis()  # Flip to show P1 at the top
+    plt.grid(color="gray", linestyle="--", linewidth=0.5)  # Light grid
     plt.show()
 
 
