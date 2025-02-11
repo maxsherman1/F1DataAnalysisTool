@@ -50,13 +50,16 @@ def plot_position_chart(df, title="F1 Race Lap Chart"):
     plt.show()
 
 
-def plot_bar_chart(df, x_col, y_col, title):
+def plot_bar_chart(df, x_col, y_col, title, hue=None, dodge=True):
+    plt.style.use("dark_background")  # Set dark background
     plt.figure(figsize=(10, 5))
-    sns.barplot(data=df, x=x_col, y=y_col)
-    plt.title(title)
-    plt.xlabel(x_col)
-    plt.ylabel(y_col)
-    plt.xticks(rotation=45)
+    sns.barplot(data=df, x=x_col, y=y_col, hue=hue, dodge=dodge, errcolor='white', color='darkblue')
+    plt.title(title, fontsize=16, color='white')
+    plt.xlabel(x_col, fontsize=12, color='white')
+    plt.ylabel(y_col, fontsize=12, color='white')
+    plt.xticks(rotation=45, color='white')
+    plt.yticks(color='white')
+    plt.grid(color="gray", linestyle="--", linewidth=0.5)
     plt.show()
 
 
