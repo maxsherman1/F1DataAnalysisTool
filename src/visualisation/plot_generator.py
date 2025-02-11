@@ -94,9 +94,10 @@ def plot_histogram(df, col, title):
     plt.show()
 
 
-def plot_pie_chart(df, col, title):
+def plot_pie_chart(df, col, title, explode=None, startangle=90, colors=None):
+    plt.style.use("dark_background")  # Set dark background
     plt.figure(figsize=(8, 8))
-    df[col].value_counts().plot.pie(autopct='%1.1f%%')
-    plt.title(title)
+    df[col].value_counts().plot.pie(autopct='%1.1f%%', explode=explode, startangle=startangle, colors=colors)
+    plt.title(title, fontsize=16, color='white')
     plt.ylabel('')  # Hide y-label
     plt.show()
