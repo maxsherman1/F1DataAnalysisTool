@@ -50,10 +50,10 @@ def plot_position_chart(df, title="F1 Race Lap Chart"):
     plt.show()
 
 
-def plot_bar_chart(df, x_col, y_col, title, hue=None, dodge=True):
+def plot_bar_chart(df, x_col, y_col, title, hue=None, dodge=True, color='darkblue'):
     plt.style.use("dark_background")  # Set dark background
     plt.figure(figsize=(10, 5))
-    sns.barplot(data=df, x=x_col, y=y_col, hue=hue, dodge=dodge, errcolor='white', color='darkblue')
+    sns.barplot(data=df, x=x_col, y=y_col, hue=hue, dodge=dodge, errcolor='white', color=color)
     plt.title(title, fontsize=16, color='white')
     plt.xlabel(x_col, fontsize=12, color='white')
     plt.ylabel(y_col, fontsize=12, color='white')
@@ -72,10 +72,10 @@ def plot_scatter_chart(df, x_col, y_col, title):
     plt.show()
 
 
-def plot_box_chart(df, x_col, title, y_col=None, hue=None, dodge=True, whis=1.5):
+def plot_box_chart(df, x_col, title, y_col=None, hue=None, dodge=True, whis=1.5, color=None):
     plt.style.use("dark_background")  # Set dark background
     plt.figure(figsize=(10, 5))
-    sns.boxplot(data=df, x=x_col, y=y_col, hue=hue, dodge=dodge, whis=whis)
+    sns.boxplot(data=df, x=x_col, y=y_col, hue=hue, dodge=dodge, whis=whis, color=color)
     plt.title(title, fontsize=16, color='white')
     plt.xlabel(x_col, fontsize=12, color='white')
     plt.ylabel(y_col if y_col else '', fontsize=12, color='white')
