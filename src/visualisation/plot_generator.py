@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
-import pandas as pd
-
 
 def plot_line_chart(df, x_col, y_col, title, hue=None, linewidth=2, alpha=1, linestyle='-', marker='o', figsize=(10, 5), flip_axis=None):
     plt.style.use("dark_background")
@@ -80,4 +78,14 @@ def plot_pie_chart(df, col, title, explode=None, startangle=90, colors=None):
     df[col].value_counts().plot.pie(autopct='%1.1f%%', explode=explode, startangle=startangle, colors=colors)
     plt.title(title, fontsize=16, color='white')
     plt.ylabel('')  # Hide y-label
+    plt.show()
+
+
+def plot_heatmap(df, title, figsize=(10, 6), cmap='coolwarm', annot=True, fmt='.2f'):
+    plt.style.use("dark_background")  # Set dark background
+    plt.figure(figsize=figsize)
+    sns.heatmap(df.corr(), annot=annot, cmap=cmap, fmt=fmt)
+    plt.title(title, fontsize=16, color='white')
+    plt.xticks(color='white')
+    plt.yticks(color='white')
     plt.show()
