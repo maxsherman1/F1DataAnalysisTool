@@ -36,12 +36,19 @@ def plot_bar_chart(df, x_col, y_col, title, hue=None, dodge=True, color='darkblu
     plt.show()
 
 
-def plot_scatter_chart(df, x_col, y_col, title):
-    plt.figure(figsize=(10, 5))
-    sns.scatterplot(data=df, x=x_col, y=y_col)
-    plt.title(title)
-    plt.xlabel(x_col)
-    plt.ylabel(y_col)
+def plot_scatter_chart(df, x_col, y_col, title, hue=None, alpha=1, marker='o', figsize=(10, 5)):
+    plt.style.use("dark_background")
+    plt.figure(figsize=figsize)
+    sns.scatterplot(data=df, x=x_col, y=y_col, hue=hue, alpha=alpha, marker=marker)
+    plt.title(title, fontsize=16, color='white')
+    if hue:
+        plt.legend(title=hue, bbox_to_anchor=(1, 1), loc='upper left', fontsize=10)
+    plt.xlabel(x_col, fontsize=12, color='white')
+    plt.ylabel(y_col, fontsize=12, color='white')
+    plt.xticks(color='white')
+    plt.yticks(color='white')
+    plt.grid(color="gray", linestyle="--", linewidth=0.5)
+    plt.tight_layout()
     plt.show()
 
 
