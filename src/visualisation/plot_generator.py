@@ -3,7 +3,7 @@ import seaborn as sns
 import pandas as pd
 
 
-def plot_line_chart(df, x_col, y_col, title, hue=None, linewidth=2, alpha=1, linestyle='-', marker='o', figsize=(12, 6)):
+def plot_line_chart(df, x_col, y_col, title, hue=None, linewidth=2, alpha=1, linestyle='-', marker='o', figsize=(12, 6), flip_axis=None):
     plt.style.use("dark_background")
     plt.figure(figsize=figsize)
     sns.lineplot(data=df, x=x_col, y=y_col, hue=hue, linewidth=linewidth, marker=marker, alpha=alpha, linestyle=linestyle)
