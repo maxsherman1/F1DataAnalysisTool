@@ -3,13 +3,18 @@ import seaborn as sns
 import pandas as pd
 
 
-def plot_line_chart(df, x_col, y_col, title):
-    plt.figure(figsize=(10, 5))
-    sns.lineplot(data=df, x=x_col, y=y_col, marker='o')
-    plt.title(title)
-    plt.xlabel(x_col)
-    plt.ylabel(y_col)
-    plt.grid()
+def plot_line_chart(df, x_col, y_col, title, hue=None, linewidth=2, alpha=1, linestyle='-', marker='o', figsize=(12, 6)):
+    plt.style.use("dark_background")
+    plt.figure(figsize=figsize)
+    sns.lineplot(data=df, x=x_col, y=y_col, hue=hue, linewidth=linewidth, marker=marker, alpha=alpha, linestyle=linestyle)
+    plt.title(title, fontsize=16, color='white')
+    plt.legend(title="Driver", bbox_to_anchor=(1, 1), loc='upper left', fontsize=10)
+    plt.xlabel(x_col, fontsize=12, color='white')
+    plt.ylabel(y_col, fontsize=12, color='white')
+    plt.xticks(color='white', rotation=45, ha='right')
+    plt.yticks(color='white')
+    plt.grid(color="gray", linestyle="--", linewidth=0.5)
+    plt.tight_layout()
     plt.show()
 
 # plots a line chart lap vs position grouped by driver, requires lap data argument
