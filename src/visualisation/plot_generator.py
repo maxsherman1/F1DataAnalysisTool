@@ -13,6 +13,10 @@ def plot_line_chart(df, x_col, y_col, title, hue=None, linewidth=2, alpha=1, lin
     plt.ylabel(y_col, fontsize=12, color='white')
     plt.xticks(color='white', rotation=45, ha='right')
     plt.yticks(color='white')
+    if flip_axis=="y" or flip_axis=="both":
+        plt.gca().invert_yaxis()
+    if flip_axis=="x" or flip_axis=="both":
+        plt.gca().invert_xaxis()
     plt.grid(color="gray", linestyle="--", linewidth=0.5)
     plt.tight_layout()
     plt.show()
