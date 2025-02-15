@@ -12,7 +12,7 @@ def format_label(label):
         new_label += char.lower()
     return new_label.capitalize()
 
-def configure_plot(title, x_label="", y_label=""):
+def configure_plot(title, x_label="", y_label="", y_data=None):
     if x_label:
         x_label = format_label(x_label)
     if y_label:
@@ -22,7 +22,10 @@ def configure_plot(title, x_label="", y_label=""):
     plt.title(title, fontsize=16, color='white')
     plt.xlabel(x_label, fontsize=12, color='white')
     plt.ylabel(y_label, fontsize=12, color='white')
-    plt.yticks(color='white')
+
+    if y_data is not None and y_data.max() < 30 and y_data.dtype in ['int64', 'float64']:
+        plt.yticks(range(int(y_data.min()), int(y_data.max()) + 1))
+
     plt.grid(color="gray", linestyle="--", linewidth=0.5)
 
     # Check length of x-axis labels and rotate 45 degrees if longer than length 5
@@ -72,5 +75,5 @@ def plot_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, 
         plt.legend(title=format_label(hue), bbox_to_anchor=(1, 1), loc="upper left", fontsize=10)
 
     # Configure and show plot
-    configure_plot(title, x_label=x_col, y_label=y_col)
+    configure_plot(title, x_label=x_col, y_label=y_col, y_data=df[y_col] if y_col else None)
     plt.show()
