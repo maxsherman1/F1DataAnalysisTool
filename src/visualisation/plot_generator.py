@@ -69,7 +69,7 @@ def plot_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, 
 
     # Add legend if hue has been specified
     if hue:
-        plt.legend(title=hue, bbox_to_anchor=(1, 1), loc="upper left", fontsize=10)
+        plt.legend(title=format_label(hue), bbox_to_anchor=(1, 1), loc="upper left", fontsize=10)
 
     # Configure and show plot
     configure_plot(title, x_label=x_col, y_label=y_col)
