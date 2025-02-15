@@ -5,9 +5,13 @@ def configure_plot(title, x_label="", y_label=""):
     plt.title(title, fontsize=16, color='white')
     plt.xlabel(x_label, fontsize=12, color='white')
     plt.ylabel(y_label, fontsize=12, color='white')
-    plt.xticks(color='white', rotation=45, ha='right')
     plt.yticks(color='white')
     plt.grid(color="gray", linestyle="--", linewidth=0.5)
+    x_labels = [tick.get_text() for tick in plt.gca().get_xticklabels()]
+    if any(len(label) > 5 for label in x_labels):
+        plt.xticks(color='white', rotation=45, ha='right')
+    else:
+        plt.xticks(color='white')
     plt.tight_layout()
 
 def plot_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, figsize=(10, 5), flip_axis=None, **kwargs):
