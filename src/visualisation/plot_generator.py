@@ -1,7 +1,23 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+def format_label(label):
+    new_label = ""
+    for char in label:
+        if char.isupper() and new_label and new_label[-1] != ' ':
+            new_label += ' '
+        elif char == '.':
+            new_label += ' '
+            continue
+        new_label += char.lower()
+    return new_label.capitalize()
+
 def configure_plot(title, x_label="", y_label=""):
+    if x_label:
+        x_label = format_label(x_label)
+    if y_label:
+        y_label = format_label(y_label)
+
     #Add title, labels, and a grid
     plt.title(title, fontsize=16, color='white')
     plt.xlabel(x_label, fontsize=12, color='white')
