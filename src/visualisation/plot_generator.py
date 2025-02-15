@@ -39,6 +39,17 @@ def configure_plot(title, x_label="", y_label="", y_data=None):
     plt.tight_layout()
 
 def plot_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, figsize=(10, 5), flip_axis=None, theme="dark_background", **kwargs):
+    # Validate columns
+    if x_col not in df.columns:
+        raise ValueError(f"Column '{x_col}' not found in DataFrame.")
+    if y_col and y_col not in df.columns:
+        raise ValueError(f"Column '{y_col}' not found in DataFrame.")
+
+    # Handle empty or NaN data
+    df = df.dropna(subset=[x_col] + ([y_col] if y_col else []))
+    if df.empty:
+        raise ValueError("DataFrame is empty after removing NaN values.")
+
     # Style and size configuration
     plt.style.use(theme)
     plt.figure(figsize=figsize)
