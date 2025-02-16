@@ -1,5 +1,8 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.express as px
+from api.jolpica_api import JolpicaAPI
+import pandas as pd
 
 def format_label(label):
     new_label = ""
@@ -12,33 +15,7 @@ def format_label(label):
         new_label += char.lower()
     return new_label.capitalize()
 
-def configure_plot(title, x_label="", y_label="", y_data=None):
-    if x_label:
-        x_label = format_label(x_label)
-    if y_label:
-        y_label = format_label(y_label)
-
-    #Add title, labels, and a grid
-    plt.title(title, fontsize=16, color='white')
-    plt.xlabel(x_label, fontsize=12, color='white')
-    plt.ylabel(y_label, fontsize=12, color='white')
-
-    if y_data is not None and y_data.max() < 30 and y_data.dtype in ['int64', 'float64']:
-        plt.yticks(range(int(y_data.min()), int(y_data.max()) + 1))
-
-    plt.grid(color="gray", linestyle="--", linewidth=0.5)
-
-    # Check length of x-axis labels and rotate 45 degrees if longer than length 5
-    x_labels = [tick.get_text() for tick in plt.gca().get_xticklabels()]
-    if any(len(label) > 5 for label in x_labels):
-        plt.xticks(color='white', rotation=45, ha='right')
-    else:
-        plt.xticks(color='white')
-
-    # Tidy the layout
-    plt.tight_layout()
-
-def plot_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, figsize=(10, 5), flip_axis=None, theme="dark_background", **kwargs):
+def plot_static_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, figsize=(10, 5), flip_axis=None, theme="dark_background", **kwargs):
     # Validate columns
     if x_col not in df.columns:
         raise ValueError(f"Column '{x_col}' not found in DataFrame.")
@@ -85,6 +62,28 @@ def plot_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, 
     if hue:
         plt.legend(title=format_label(hue), bbox_to_anchor=(1, 1), loc="upper left", fontsize=10)
 
-    # Configure and show plot
-    configure_plot(title, x_label=x_col, y_label=y_col, y_data=df[y_col] if y_col else None)
+    y_data = df[y_col] if y_col else None
+    x_label = format_label(x_col)
+    y_label = format_label(y_col) if y_col else None
+
+    #Add title, labels, and a grid
+    plt.title(title, fontsize=16, color='white')
+    plt.xlabel(x_label, fontsize=12, color='white')
+    plt.ylabel(y_label, fontsize=12, color='white')
+
+    if y_data is not None and y_data.max() < 30 and y_data.dtype in ['int64', 'float64']:
+        plt.yticks(range(int(y_data.min()), int(y_data.max()) + 1))
+
+    plt.grid(color="gray", linestyle="--", linewidth=0.5)
+
+    # Check length of x-axis labels and rotate 45 degrees if longer than length 5
+    x_labels = [tick.get_text() for tick in plt.gca().get_xticklabels()]
+    if any(len(label) > 5 for label in x_labels):
+        plt.xticks(color='white', rotation=45, ha='right')
+    else:
+        plt.xticks(color='white')
+
+    # Tidy the layout
+    plt.tight_layout()
+
     plt.show()
