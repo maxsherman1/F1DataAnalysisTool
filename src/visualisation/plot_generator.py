@@ -104,31 +104,46 @@ def plot_static_chart(
     plt.show()
 
 
-def plot_interactive_chart(df, x_col, y_col=None, title="", plot_type="line", hue=None, flip_axis=None, **kwargs):
+def plot_interactive_chart(
+        df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
+        plot_type: str = "line", hue: str = None, flip_axis: str = None, **kwargs
+):
     validate_columns(df, x_col, y_col)
     df = preprocess_data(df, x_col, y_col)
 
-    plot_func = {
-        "line": px.line,
-        "bar": px.bar,
-        "scatter": px.scatter,
-        "box": px.box,
-        "hist": px.histogram,
-        "pie": px.pie,
-        "heatmap": px.imshow,
-    }
-
-    if plot_type == "pie":
-        fig = plot_func[plot_type](df, names=x_col, values=y_col, title=format_label(title), **kwargs)
-    elif plot_type == "heatmap":
-        fig = plot_func[plot_type](df.corr(), title=format_label(title), color_continuous_scale='coolwarm', **kwargs)
+    # Special handling for specific plot types
+    if plot_type == "heatmap":
+        df = df.corr()
+        fig = px.imshow(df, color_continuous_scale="viridis", **kwargs)
+    elif plot_type == "hist":
+        fig = px.histogram(df, x=x_col, color=hue, **kwargs)
+    elif plot_type == "pie":
+        fig = px.pie(df, names=x_col, title=title, **kwargs)
     else:
-        fig = plot_func[plot_type](df, x=x_col, y=y_col, color=hue, title=format_label(title), **kwargs)
+        plot_mapping = {
+            "line": px.line,
+            "bar": px.bar,
+            "scatter": px.scatter,
+            "box": px.box
+        }
+        plot_function = plot_mapping.get(plot_type, px.line)
+        fig = plot_function(df, x=x_col, y=y_col, color=hue, title=title, **kwargs)
     fig.update_layout(template="plotly_dark")
 
-    if flip_axis in ["y", "both"]:
-        fig.update_yaxes(autorange='reversed')
-    if flip_axis in ["x", "both"]:
-        fig.update_xaxes(autorange='reversed')
+    # Format labels
+    x_label = format_label(x_col)
+    y_label = format_label(y_col) if y_col else ""
+
+    fig.update_layout(
+        xaxis_title=x_label,
+        yaxis_title=y_label,
+        title_font_size=16
+    )
+
+    # Flip axes if needed
+    if flip_axis in {"x", "both"}:
+        fig.update_layout(xaxis=dict(autorange="reversed"))
+    if flip_axis in {"y", "both"}:
+        fig.update_layout(yaxis=dict(autorange="reversed"))
 
     fig.show()
