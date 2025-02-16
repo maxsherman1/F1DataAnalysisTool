@@ -26,6 +26,13 @@ def preprocess_data(df: pd.DataFrame, x_col: str, y_col: str = None):
         raise ValueError("DataFrame is empty after removing NaN values.")
     return df
 
+def apply_axis_flip(flip_axis: str):
+    ax = plt.gca()
+    if flip_axis in {"y", "both"}:
+        ax.invert_yaxis()
+    if flip_axis in {"x", "both"}:
+        ax.invert_xaxis()
+
 def plot_static_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, figsize=(10, 5), flip_axis=None, theme="dark_background", **kwargs):
     # Validate columns
     validate_columns(df, x_col, y_col)
@@ -38,10 +45,7 @@ def plot_static_chart(df, x_col, y_col = None, title = "", plot_type="line", hue
     plt.figure(figsize=figsize)
 
     # Axis flipping
-    if flip_axis in ["y", "both"]:
-        plt.gca().invert_yaxis()
-    if flip_axis in ["x", "both"]:
-        plt.gca().invert_xaxis()
+    apply_axis_flip(flip_axis)
 
     # Data configuration for heatmpa and histograms
     if plot_type == "heatmap":
