@@ -20,14 +20,18 @@ def validate_columns(df: pd.DataFrame, x_col: str, y_col: str = None):
     if missing_cols:
         raise ValueError(f"Missing column(s) in DataFrame: {', '.join(missing_cols)}")
 
+def preprocess_data(df: pd.DataFrame, x_col: str, y_col: str = None):
+    df = df.dropna(subset=[x_col] + ([y_col] if y_col else []))
+    if df.empty:
+        raise ValueError("DataFrame is empty after removing NaN values.")
+    return df
+
 def plot_static_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, figsize=(10, 5), flip_axis=None, theme="dark_background", **kwargs):
     # Validate columns
     validate_columns(df, x_col, y_col)
 
     # Handle empty or NaN data
-    df = df.dropna(subset=[x_col] + ([y_col] if y_col else []))
-    if df.empty:
-        raise ValueError("DataFrame is empty after removing NaN values.")
+    df = preprocess_data(df, x_col, y_col)
 
     # Style and size configuration
     plt.style.use(theme)
