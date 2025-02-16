@@ -45,60 +45,60 @@ def get_plot_function(plot_type: str):
     }
     return plot_mapping.get(plot_type, sns.lineplot)  # Default to lineplot
 
-def plot_static_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, figsize=(10, 5), flip_axis=None, theme="dark_background", **kwargs):
-    # Validate columns
-    validate_columns(df, x_col, y_col)
 
-    # Handle empty or NaN data
+def plot_static_chart(
+        df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
+        plot_type: str = "line", hue: str = None, figsize: tuple = (10, 5),
+        flip_axis: str = None, theme: str = "dark_background", **kwargs
+):
+    validate_columns(df, x_col, y_col)
     df = preprocess_data(df, x_col, y_col)
 
-    # Style and size configuration
+    # Set theme and figure size
     plt.style.use(theme)
     plt.figure(figsize=figsize)
 
-    # Axis flipping
-    apply_axis_flip(flip_axis)
+    apply_axis_flip(flip_axis)  # Flip axes if needed
 
-    # Data configuration for heatmpa and histograms
+    # Special handling for specific plot types
     if plot_type == "heatmap":
         df = df.corr()
     elif plot_type == "hist":
         df = df[x_col]
-        y_col="Frequency"
+        y_col = "Frequency"
 
     plot_func = get_plot_function(plot_type)
 
+    # Handle pie charts separately
     if plot_func == "pie":
         df[x_col].value_counts().plot.pie(autopct='%1.1f%%', **kwargs)
     else:
         plot_func(data=df, x=x_col, y=y_col, hue=hue, **kwargs)
 
-    # Add legend if hue has been specified
+    # Add legend if hue is specified
     if hue:
         plt.legend(title=format_label(hue), bbox_to_anchor=(1, 1), loc="upper left", fontsize=10)
 
-    y_data = df[y_col] if y_col else None
+    # Format labels
     x_label = format_label(x_col)
-    y_label = format_label(y_col) if y_col else None
+    y_label = format_label(y_col) if y_col else ""
 
-    #Add title, labels, and a grid
+    # Add title and labels
     plt.title(title, fontsize=16, color='white')
     plt.xlabel(x_label, fontsize=12, color='white')
     plt.ylabel(y_label, fontsize=12, color='white')
 
-    if y_data is not None and y_data.max() < 30 and y_data.dtype in ['int64', 'float64']:
-        plt.yticks(range(int(y_data.min()), int(y_data.max()) + 1))
+    # Adjust y-ticks for small numeric ranges
+    if y_col and df[y_col].dtype in ['int64', 'float64'] and df[y_col].max() < 30:
+        plt.yticks(range(int(df[y_col].min()), int(df[y_col].max()) + 1))
 
     plt.grid(color="gray", linestyle="--", linewidth=0.5)
 
-    # Check length of x-axis labels and rotate 45 degrees if longer than length 5
+    # Rotate x-axis labels if they are too long
     x_labels = [tick.get_text() for tick in plt.gca().get_xticklabels()]
-    if any(len(label) > 5 for label in x_labels):
-        plt.xticks(color='white', rotation=45, ha='right')
-    else:
-        plt.xticks(color='white')
+    rotation = 45 if any(len(label) > 5 for label in x_labels) else 0
+    plt.xticks(color='white', rotation=rotation, ha='right' if rotation else 'center')
 
     # Tidy the layout
     plt.tight_layout()
-
     plt.show()
