@@ -15,12 +15,14 @@ def format_label(label):
         new_label += char.lower()
     return new_label.capitalize()
 
+def validate_columns(df: pd.DataFrame, x_col: str, y_col: str = None):
+    missing_cols = [col for col in [x_col, y_col] if col and col not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Missing column(s) in DataFrame: {', '.join(missing_cols)}")
+
 def plot_static_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, figsize=(10, 5), flip_axis=None, theme="dark_background", **kwargs):
     # Validate columns
-    if x_col not in df.columns:
-        raise ValueError(f"Column '{x_col}' not found in DataFrame.")
-    if y_col and y_col not in df.columns:
-        raise ValueError(f"Column '{y_col}' not found in DataFrame.")
+    validate_columns(df, x_col, y_col)
 
     # Handle empty or NaN data
     df = df.dropna(subset=[x_col] + ([y_col] if y_col else []))
