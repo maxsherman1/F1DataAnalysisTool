@@ -33,7 +33,7 @@ def apply_axis_flip(flip_axis: str):
     if flip_axis in {"x", "both"}:
         ax.invert_xaxis()
 
-def get_plot_function(plot_type: str):
+def get_static_plot(plot_type: str):
     plot_mapping = {
         "line": sns.lineplot,
         "bar": sns.barplot,
@@ -67,13 +67,13 @@ def plot_static_chart(
         df = df[x_col]
         y_col = "Frequency"
 
-    plot_func = get_plot_function(plot_type)
+    static_plot = get_static_plot(plot_type)
 
     # Handle pie charts separately
-    if plot_func == "pie":
+    if static_plot == "pie":
         df[x_col].value_counts().plot.pie(autopct='%1.1f%%', **kwargs)
     else:
-        plot_func(data=df, x=x_col, y=y_col, hue=hue, **kwargs)
+        static_plot(data=df, x=x_col, y=y_col, hue=hue, **kwargs)
 
     # Add legend if hue is specified
     if hue:
@@ -102,3 +102,33 @@ def plot_static_chart(
     # Tidy the layout
     plt.tight_layout()
     plt.show()
+
+
+def plot_interactive_chart(df, x_col, y_col=None, title="", plot_type="line", hue=None, flip_axis=None, **kwargs):
+    validate_columns(df, x_col, y_col)
+    df = preprocess_data(df, x_col, y_col)
+
+    plot_func = {
+        "line": px.line,
+        "bar": px.bar,
+        "scatter": px.scatter,
+        "box": px.box,
+        "hist": px.histogram,
+        "pie": px.pie,
+        "heatmap": px.imshow,
+    }
+
+    if plot_type == "pie":
+        fig = plot_func[plot_type](df, names=x_col, values=y_col, title=format_label(title), **kwargs)
+    elif plot_type == "heatmap":
+        fig = plot_func[plot_type](df.corr(), title=format_label(title), color_continuous_scale='coolwarm', **kwargs)
+    else:
+        fig = plot_func[plot_type](df, x=x_col, y=y_col, color=hue, title=format_label(title), **kwargs)
+    fig.update_layout(template="plotly_dark")
+
+    if flip_axis in ["y", "both"]:
+        fig.update_yaxes(autorange='reversed')
+    if flip_axis in ["x", "both"]:
+        fig.update_xaxes(autorange='reversed')
+
+    fig.show()
