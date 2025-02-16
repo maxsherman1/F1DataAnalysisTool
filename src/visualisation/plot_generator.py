@@ -33,6 +33,18 @@ def apply_axis_flip(flip_axis: str):
     if flip_axis in {"x", "both"}:
         ax.invert_xaxis()
 
+def get_plot_function(plot_type: str):
+    plot_mapping = {
+        "line": sns.lineplot,
+        "bar": sns.barplot,
+        "scatter": sns.scatterplot,
+        "box": sns.boxplot,
+        "hist": sns.histplot,
+        "heatmap": sns.heatmap,
+        "pie": "pie"
+    }
+    return plot_mapping.get(plot_type, sns.lineplot)  # Default to lineplot
+
 def plot_static_chart(df, x_col, y_col = None, title = "", plot_type="line", hue=None, figsize=(10, 5), flip_axis=None, theme="dark_background", **kwargs):
     # Validate columns
     validate_columns(df, x_col, y_col)
@@ -54,19 +66,12 @@ def plot_static_chart(df, x_col, y_col = None, title = "", plot_type="line", hue
         df = df[x_col]
         y_col="Frequency"
 
-    # plotting the graph
-    plot_func = {
-        "line": sns.lineplot,
-        "bar": sns.barplot,
-        "scatter": sns.scatterplot,
-        "box": sns.boxplot,
-        "hist": sns.histplot,
-        "heatmap": sns.heatmap,
-    }
-    if plot_type == "pie":
+    plot_func = get_plot_function(plot_type)
+
+    if plot_func == "pie":
         df[x_col].value_counts().plot.pie(autopct='%1.1f%%', **kwargs)
     else:
-        plot_func[plot_type](data=df, x=x_col, y=y_col, hue=hue, **kwargs)
+        plot_func(data=df, x=x_col, y=y_col, hue=hue, **kwargs)
 
     # Add legend if hue has been specified
     if hue:
