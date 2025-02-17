@@ -133,10 +133,12 @@ def plot_interactive_chart(
     # Format labels
     x_label = format_label(x_col)
     y_label = format_label(y_col) if y_col else ""
+    legend_title = format_label(hue) if hue else ""
 
     fig.update_layout(
         xaxis_title=x_label,
         yaxis_title=y_label,
+        legend_title_text=legend_title,
         title_font_size=16
     )
 
