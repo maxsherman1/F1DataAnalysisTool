@@ -33,7 +33,7 @@ def apply_axis_flip(flip_axis: str):
     if flip_axis in {"x", "both"}:
         ax.invert_xaxis()
 
-def get_static_plot(plot_type: str):
+def get_static_plot_type(plot_type: str):
     plot_mapping = {
         "line": sns.lineplot,
         "bar": sns.barplot,
@@ -67,7 +67,7 @@ def plot_static_chart(
         df = df[x_col]
         y_col = "Frequency"
 
-    static_plot = get_static_plot(plot_type)
+    static_plot = get_static_plot_type(plot_type)
 
     # Handle pie charts separately
     if static_plot == "pie":
@@ -106,7 +106,8 @@ def plot_static_chart(
 
 def plot_interactive_chart(
         df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
-        plot_type: str = "line", hue: str = None, flip_axis: str = None, **kwargs
+        plot_type: str = "line", hue: str = None, flip_axis: str = None,
+        figsize: tuple = None, theme: str = "plotly_dark", **kwargs
 ):
     validate_columns(df, x_col, y_col)
     df = preprocess_data(df, x_col, y_col)
@@ -128,7 +129,10 @@ def plot_interactive_chart(
         }
         plot_function = plot_mapping.get(plot_type, px.line)
         fig = plot_function(df, x=x_col, y=y_col, color=hue, title=title, **kwargs)
-    fig.update_layout(template="plotly_dark")
+    fig.update_layout(template=theme)
+
+    if figsize:
+        fig.update_layout(width=figsize[0], height=figsize[1])
 
     # Format labels
     x_label = format_label(x_col)
@@ -147,5 +151,13 @@ def plot_interactive_chart(
         fig.update_layout(xaxis=dict(autorange="reversed"))
     if flip_axis in {"y", "both"}:
         fig.update_layout(yaxis=dict(autorange="reversed"))
+
+    if y_col and df[y_col].dtype in ['int64', 'float64'] and df[y_col].max() - df[y_col].min() < 30:
+        fig.update_layout(
+            yaxis=dict(
+                tickmode='array',
+                tickvals=list(range(int(df[y_col].min()), int(df[y_col].max()) + 1))
+            )
+        )
 
     fig.show()
