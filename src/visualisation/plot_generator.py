@@ -28,6 +28,9 @@ def preprocess_data(df: pd.DataFrame, x_col: str, y_col: str = None):
 
 def apply_axis_flip(fig, flip_axis: list, plot_type: str = "static"):
 
+    if flip_axis is None:
+        flip_axis=[]
+
     flip = {
         "static": {
             "x": lambda f: f.invert_xaxis(),
@@ -43,22 +46,30 @@ def apply_axis_flip(fig, flip_axis: list, plot_type: str = "static"):
         flip[plot_type][axis](fig)
 
 
-def get_static_plot_type(plot_type: str):
+def get_plot_function(plot_type: str, mode="static"):
     plot_mapping = {
-        "line": sns.lineplot,
-        "bar": sns.barplot,
-        "scatter": sns.scatterplot,
-        "box": sns.boxplot,
-        "hist": sns.histplot,
-        "heatmap": sns.heatmap,
-        "pie": "pie"
+        "static": {
+            "line": sns.lineplot,
+            "bar": sns.barplot,
+            "scatter": sns.scatterplot,
+            "box": sns.boxplot,
+            "hist": sns.histplot,
+            "heatmap": sns.heatmap,
+            "pie": "pie"  # Placeholder for pie charts in seaborn
+        },
+        "interactive": {
+            "line": px.line,
+            "bar": px.bar,
+            "scatter": px.scatter,
+            "box": px.box
+        }
     }
-    return plot_mapping.get(plot_type, sns.lineplot)  # Default to lineplot
+    return plot_mapping[mode].get(plot_type, sns.lineplot if mode == "static" else px.line)  # Default to lineplot
 
 
 def plot_static_chart(
         df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
-        plot_type: str = "line", hue: str = None, figsize: tuple = (10, 5),
+        plot_type: str = "line", hue: str = None, figsize: tuple[float, float] = (10, 5),
         flip_axis: list = None, theme: str = "dark_background", **kwargs
 ):
     validate_columns(df, x_col, y_col)
@@ -77,7 +88,7 @@ def plot_static_chart(
         df = df[x_col]
         y_col = "Frequency"
 
-    static_plot = get_static_plot_type(plot_type)
+    static_plot = get_plot_function(plot_type, "static")
 
     # Handle pie charts separately
     if static_plot == "pie":
@@ -131,13 +142,7 @@ def plot_interactive_chart(
     elif plot_type == "pie":
         fig = px.pie(df, names=x_col, title=title, **kwargs)
     else:
-        plot_mapping = {
-            "line": px.line,
-            "bar": px.bar,
-            "scatter": px.scatter,
-            "box": px.box
-        }
-        plot_function = plot_mapping.get(plot_type, px.line)
+        plot_function = get_plot_function(plot_type, "interactive")
         fig = plot_function(df, x=x_col, y=y_col, color=hue, title=title, **kwargs)
     fig.update_layout(template=theme)
 
