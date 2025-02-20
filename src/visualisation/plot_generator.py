@@ -26,12 +26,22 @@ def preprocess_data(df: pd.DataFrame, x_col: str, y_col: str = None):
         raise ValueError("DataFrame is empty after removing NaN values.")
     return df
 
-def apply_axis_flip(flip_axis: str):
-    ax = plt.gca()
-    if flip_axis in {"y", "both"}:
-        ax.invert_yaxis()
-    if flip_axis in {"x", "both"}:
-        ax.invert_xaxis()
+def apply_axis_flip(fig, flip_axis: list, plot_type: str = "static"):
+
+    flip = {
+        "static": {
+            "x": lambda f: f.invert_xaxis(),
+            "y": lambda f: f.invert_yaxis()
+        },
+        "interactive": {
+            "x": lambda f: f.update_layout(xaxis=dict(autorange="reversed")),
+            "y": lambda f: f.update_layout(yaxis=dict(autorange="reversed"))
+        }
+    }
+
+    for axis in flip_axis:
+        flip[plot_type][axis](fig)
+
 
 def get_static_plot_type(plot_type: str):
     plot_mapping = {
@@ -58,7 +68,7 @@ def plot_static_chart(
     plt.style.use(theme)
     plt.figure(figsize=figsize)
 
-    apply_axis_flip(flip_axis)  # Flip axes if needed
+    apply_axis_flip(plt.gca(), flip_axis, plot_type="static")  # Flip axes if needed
 
     # Special handling for specific plot types
     if plot_type == "heatmap":
@@ -106,7 +116,7 @@ def plot_static_chart(
 
 def plot_interactive_chart(
         df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
-        plot_type: str = "line", hue: str = None, flip_axis: str = None,
+        plot_type: str = "line", hue: str = None, flip_axis: list = None,
         figsize: tuple = None, theme: str = "plotly_dark", **kwargs
 ):
     validate_columns(df, x_col, y_col)
@@ -147,10 +157,7 @@ def plot_interactive_chart(
     )
 
     # Flip axes if needed
-    if flip_axis in {"x", "both"}:
-        fig.update_layout(xaxis=dict(autorange="reversed"))
-    if flip_axis in {"y", "both"}:
-        fig.update_layout(yaxis=dict(autorange="reversed"))
+    apply_axis_flip(fig, flip_axis, plot_type="interactive")
 
     if y_col and df[y_col].dtype in ['int64', 'float64'] and df[y_col].max() - df[y_col].min() < 30:
         fig.update_layout(
