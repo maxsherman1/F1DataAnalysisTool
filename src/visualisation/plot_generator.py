@@ -59,7 +59,7 @@ def get_static_plot_type(plot_type: str):
 def plot_static_chart(
         df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
         plot_type: str = "line", hue: str = None, figsize: tuple = (10, 5),
-        flip_axis: str = None, theme: str = "dark_background", **kwargs
+        flip_axis: list = None, theme: str = "dark_background", **kwargs
 ):
     validate_columns(df, x_col, y_col)
     df = preprocess_data(df, x_col, y_col)
