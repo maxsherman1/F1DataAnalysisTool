@@ -6,7 +6,7 @@ import api.data_preprocessing as dp
 import pandas as pd
 from typing import Dict, Any, List, Optional
 from pathlib import Path
-from enumeration.resource_types import ResourceHandler
+from enumeration.resource_types import ResourceType
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -25,9 +25,6 @@ class JolpicaAPI:
 
     # Init function validating resource type and filters
     def __init__(self, resource_type: str, params: Optional[Dict[str, Any]] = None, filters: Optional[Dict[str, Any]] = None):
-        # Input validation
-        self.resource_handler = ResourceHandler(resource_type)
-
         # Set instance variables
         self.params = {}
         if params is not None:
@@ -60,9 +57,8 @@ class JolpicaAPI:
     # Set all the filters provided
     def set_filters(self, filters: Dict[str, Any]) -> None:
         # Get mandatory and optional filters for the resource type
-        valid_filters = self.resource_handler.get_filters()
-        mandatory = valid_filters.get("mandatory")
-        optional = valid_filters.get("optional")
+        mandatory = ResourceType.get_mandatory(resource_type=self.resource_type)
+        optional = ResourceType.get_optional(resource_type=self.resource_type)
 
         # Check mandatory filters to see if they are present
         for key in mandatory:
