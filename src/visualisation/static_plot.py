@@ -1,4 +1,4 @@
-from visualisation.plot_utils import format_label, apply_axis_flip
+from visualisation.plot_utils import format_label, apply_axis_flip, configure_axis_ticks
 from enumeration.plot_types import PlotMode, PlotType, PlotFunction
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -30,6 +30,7 @@ def plot_static_chart(
         df[x_col].value_counts().plot.pie(autopct='%1.1f%%', ax=ax, **kwargs)
     else:
         plot_function(data=df, x=x_col, y=y_col, hue=hue, ax=ax, **kwargs)
+        configure_axis_ticks(ax, df, x_col, y_col, "static")
 
     # Add legend if hue is specified
     if hue:
@@ -39,10 +40,6 @@ def plot_static_chart(
     ax.set_title(title, fontsize=16, color='white')
     ax.set_xlabel(format_label(x_col), fontsize=12, color='white')
     ax.set_ylabel(format_label(y_col) if y_col else "", fontsize=12, color='white')
-
-    # Adjust y-ticks for small numeric ranges
-    if y_col and df[y_col].dtype in ['int64', 'float64'] and df[y_col].max() < 30:
-        ax.set_yticks(range(int(df[y_col].min()), int(df[y_col].max()) + 1))
 
     plt.grid(color="gray", linestyle="--", linewidth=0.5)
 

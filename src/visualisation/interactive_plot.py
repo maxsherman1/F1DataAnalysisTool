@@ -1,4 +1,4 @@
-from visualisation.plot_utils import format_label, apply_axis_flip
+from visualisation.plot_utils import format_label, apply_axis_flip, configure_axis_ticks
 from enumeration.plot_types import PlotMode, PlotType, PlotFunction
 import pandas as pd
 
@@ -16,6 +16,7 @@ def plot_interactive_chart(
         fig = plot_function(df, names=x_col, title=title, **kwargs)
     else:
         fig = plot_function(df, x=x_col, y=y_col, color=hue, title=title, **kwargs)
+        configure_axis_ticks(fig, df, x_col, y_col, "interactive")
 
     fig.update_layout(template=theme, width=figsize[0], height=figsize[1])
 
@@ -29,12 +30,5 @@ def plot_interactive_chart(
     # Flip axes if needed
     apply_axis_flip(fig, flip_axis, plot_type="interactive")
 
-    if y_col and df[y_col].dtype in ['int64', 'float64'] and df[y_col].max() - df[y_col].min() < 30:
-        fig.update_layout(
-            yaxis=dict(
-                tickmode='array',
-                tickvals=list(range(int(df[y_col].min()), int(df[y_col].max()) + 1))
-            )
-        )
 
     return fig
