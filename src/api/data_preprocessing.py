@@ -103,3 +103,20 @@ def get_column_min_max(df: pd.DataFrame, column: str) -> Tuple[float, float] | T
     if pd.api.types.is_numeric_dtype(df[column]):
         return df[column].min(), df[column].max()
     return None, None
+
+def convert_to_ms(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    def time_to_ms(time_str):
+        time_parts = str(time_str).split(":")
+        if len(time_parts) == 2:
+            minutes, rest = time_parts
+            seconds, milliseconds = rest.split(".") if "." in rest else (rest, "0")
+            return (int(minutes) * 60000) + (int(seconds) * 1000) + int(milliseconds)
+        return None
+
+    try:
+        df[column] = df[column].apply(time_to_ms)  # Convert to ms
+        logging.info("Time values converted to milliseconds.")
+    except Exception as e:
+        logging.error(f"Error converting time to milliseconds: {e}")
+    return df
+
