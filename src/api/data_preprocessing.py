@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -89,3 +89,17 @@ def preprocess_data(inner_data: List[Dict]) -> List[Dict]:
 
     # Return the flattened data for each entry in inner data if inner data has been provided
     return [flatten(entry) for entry in inner_data] if inner_data else inner_data
+
+def get_columns(df: pd.DataFrame) -> List[str]:
+    return list(df.columns)
+
+def validate_data(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.dropna()
+    if df.empty:
+        logging.warning("Dataframe is empty after removing missing values. Returning empty DataFrame.")
+    return df
+
+def get_column_min_max(df: pd.DataFrame, column: str) -> Tuple[float, float] | Tuple[None, None]:
+    if pd.api.types.is_numeric_dtype(df[column]):
+        return df[column].min(), df[column].max()
+    return None, None
