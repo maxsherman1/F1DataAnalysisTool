@@ -104,7 +104,7 @@ def get_column_min_max(df: pd.DataFrame, column: str) -> Tuple[float, float] | T
         return df[column].min(), df[column].max()
     return None, None
 
-def convert_to_ms(df: pd.DataFrame, column: str) -> pd.DataFrame:
+def convert_to_ms(df: pd.DataFrame) -> pd.DataFrame:
     def time_to_ms(time_str):
         time_parts = str(time_str).split(":")
         if len(time_parts) == 2:
@@ -114,9 +114,10 @@ def convert_to_ms(df: pd.DataFrame, column: str) -> pd.DataFrame:
         return None
 
     try:
-        df[column] = df[column].apply(time_to_ms)  # Convert to ms
-        logging.info("Time values converted to milliseconds.")
+        for column in get_columns(df):
+            if "time" in column:
+                df[column] = df[column].apply(time_to_ms)
+        logging.info("Time values converted to milliseconds in all time columns.")
     except Exception as e:
         logging.error(f"Error converting time to milliseconds: {e}")
     return df
-
