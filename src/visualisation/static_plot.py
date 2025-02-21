@@ -1,4 +1,4 @@
-from visualisation.plot_utils import format_label, validate_columns, preprocess_data, apply_axis_flip, get_plot_function
+from visualisation.plot_utils import format_label, apply_axis_flip, get_plot_function
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -7,9 +7,6 @@ def plot_static_chart(
         plot_type: str = "line", hue: str = None, figsize: tuple[float, float] = (10, 5),
         flip_axis: list = None, theme: str = "dark_background", **kwargs
 ):
-    validate_columns(df, x_col, y_col)
-    df = preprocess_data(df, x_col, y_col)
-
     # Set theme and figure size
     plt.style.use(theme)
     fig, ax = plt.subplots(figsize=figsize)
