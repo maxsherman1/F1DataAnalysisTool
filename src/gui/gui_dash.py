@@ -6,6 +6,8 @@ from api.jolpica_api import JolpicaAPI
 from enumeration.resource_types import ResourceType
 from enumeration.plot_types import PlotType
 import api.data_preprocessing as dp
+import io
+import base64
 
 # Get plot types
 plot_types = [pt.value.capitalize() for pt in PlotType]
@@ -106,6 +108,14 @@ def update_plot(n_clicks, resource_type, x_col, y_col, group_by, plot_mode, plot
     data = JolpicaAPI(resource_type=resource_type).get_cleaned_data()
     fig = plot_chart(data, x_col, y_col, title=f"F1 {resource_type} Analysis", plot_type=(plot_mode, plot_type),
                      flip_axis=['x'] if 'flip_x' in flip_axis else (['y'] if 'flip_y' in flip_axis else None))
+
+    if plot_mode == 'static':
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+        return go.Figure(go.Image(source='data:image/png;base64,' + img_base64))
+
     return fig
 
 

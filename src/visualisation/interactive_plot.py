@@ -16,7 +16,7 @@ def plot_interactive_chart(
         fig = plot_function(df, names=x_col, title=title, **kwargs)
     else:
         fig = plot_function(df, x=x_col, y=y_col, color=hue, title=title, **kwargs)
-        configure_axis_ticks(fig, df, x_col, y_col, "interactive")
+        configure_axis_ticks(fig, df, x_col, y_col)
 
     fig.update_layout(template=theme, width=figsize[0], height=figsize[1])
 

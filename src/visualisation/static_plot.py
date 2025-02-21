@@ -30,7 +30,7 @@ def plot_static_chart(
         df[x_col].value_counts().plot.pie(autopct='%1.1f%%', ax=ax, **kwargs)
     else:
         plot_function(data=df, x=x_col, y=y_col, hue=hue, ax=ax, **kwargs)
-        configure_axis_ticks(ax, df, x_col, y_col, "static")
+        configure_axis_ticks(ax, df, x_col, y_col)
 
     # Add legend if hue is specified
     if hue:
