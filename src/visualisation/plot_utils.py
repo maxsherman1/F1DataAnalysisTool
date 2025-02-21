@@ -1,6 +1,5 @@
 import seaborn as sns
 import plotly.express as px
-import pandas as pd
 
 def format_label(label):
     new_label = ""
@@ -13,23 +12,12 @@ def format_label(label):
         new_label += char.lower()
     return new_label.capitalize()
 
-def validate_columns(df: pd.DataFrame, x_col: str, y_col: str = None):
-    missing_cols = [col for col in [x_col, y_col] if col and col not in df.columns]
-    if missing_cols:
-        raise ValueError(f"Missing column(s) in DataFrame: {', '.join(missing_cols)}")
-
-def preprocess_data(df: pd.DataFrame, x_col: str, y_col: str = None):
-    df = df.dropna(subset=[x_col] + ([y_col] if y_col else []))
-    if df.empty:
-        raise ValueError("DataFrame is empty after removing NaN values.")
-    return df
-
-def apply_axis_flip(fig, flip_axis: list, plot_type: str = "static"):
+def apply_axis_flip(fig, flip_axis: list = None, plot_type: str = "static"):
 
     if flip_axis is None:
         flip_axis=[]
 
-    flip = {
+    flip_methods = {
         "static": {
             "x": lambda f: f.invert_xaxis(),
             "y": lambda f: f.invert_yaxis()
@@ -41,9 +29,9 @@ def apply_axis_flip(fig, flip_axis: list, plot_type: str = "static"):
     }
 
     for axis in flip_axis:
-        flip[plot_type][axis](fig)
+        flip_methods[plot_type][axis](fig)
 
-def get_plot_function(plot_type: str, mode="static"):
+def get_plot_function(plot_type: str, mode: str = "static"):
     plot_mapping = {
         "static": {
             "line": sns.lineplot,
@@ -58,7 +46,10 @@ def get_plot_function(plot_type: str, mode="static"):
             "line": px.line,
             "bar": px.bar,
             "scatter": px.scatter,
-            "box": px.box
+            "box": px.box,
+            "heatmap": px.imshow,
+            "hist": px.histogram,
+            "pie": px.pie
         }
     }
-    return plot_mapping[mode].get(plot_type, sns.lineplot if mode == "static" else px.line)  # Default to lineplot
+    return plot_mapping.get(mode, {}).get(plot_type, sns.lineplot if mode == "static" else px.line)  # Default to lineplot
