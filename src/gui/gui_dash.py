@@ -25,8 +25,10 @@ app.layout = html.Div([
     # Controls
     html.Div([
         html.Label("Select Resource Type:"),
-        dcc.Dropdown(id='resource_type', options=[{'label': name, 'value': name} for name in resource_types],
-                     value=None),
+        dcc.Dropdown(id='resource_type', options=[{'label': name, 'value': name} for name in resource_types], value=None),
+
+        html.Label("Filters:"),
+        html.Div(id='filter_inputs', children=[]),
 
         html.Label("Select Plot Type:"),
         dcc.Dropdown(id='plot_type_dropdown', options=[{'label': pt, 'value': pt.lower()} for pt in plot_types],
@@ -70,22 +72,58 @@ app.layout = html.Div([
 ])
 
 
+# Callbacks to update filters based on selected resource type
+@app.callback(
+    Output('filter_inputs', 'children'),
+    [Input('resource_type', 'value')]
+)
+def update_filters(resource_type):
+    if not resource_type:
+        return []
+
+    mandatory_filters = ResourceType.get_mandatory(resource_type)
+    optional_filters = ResourceType.get_optional(resource_type)
+    filter_inputs = []
+
+    for filter_name in mandatory_filters:
+        filter_inputs.append(
+            html.Div([
+                html.Label(f"{filter_name.capitalize()} (required):", style={'margin-right': '10px', 'min-width': '140px'}),
+                dcc.Input(id=f'filter_{filter_name}', type='text', placeholder=f'Enter {filter_name}', required=True,
+                          style={'flex': '1'})
+            ], style={'display': 'flex', 'align-items': 'center', 'margin-bottom': '5px'})
+        )
+
+    for filter_name in optional_filters:
+        filter_inputs.append(
+            html.Div([
+                html.Label(f"{filter_name.capitalize()} (optional):", style={'margin-right': '10px', 'min-width': '140px'}),
+                dcc.Input(id=f'filter_{filter_name}', type='text', placeholder=f'Enter {filter_name}',
+                          style={'flex': '1'})
+            ], style={'display': 'flex', 'align-items': 'center', 'margin-bottom': '5px'})
+        )
+
+    return filter_inputs
+
+
 # Callbacks to update dropdowns when resource type changes
 @app.callback(
     [Output('x_axis', 'options'), Output('y_axis', 'options'), Output('group_by', 'options')],
-    [Input('resource_type', 'value'), Input('x_axis', 'value'), Input('y_axis', 'value'), Input('group_by', 'value')]
+    [Input('resource_type', 'value')],
+    [State(f'filter_{f}', 'value') for f in ResourceType.get_mandatory("CIRCUITS") + ResourceType.get_optional("CIRCUITS")]  # Dummy list
 )
-def update_column_options(resource_type, x_col, y_col, group_by):
+def update_column_options(resource_type, *filter_values):
     if not resource_type:
         return [], [{'label': 'None', 'value': 'none'}], [{'label': 'None', 'value': 'none'}]
 
-    data = JolpicaAPI(resource_type=resource_type).get_cleaned_data()
+    filters = {f: v for f, v in zip(ResourceType.get_mandatory(resource_type) + ResourceType.get_optional(resource_type), filter_values) if v}
+    data = JolpicaAPI(resource_type=resource_type, filters=filters).get_cleaned_data()
     columns = dp.get_columns(data)
     options = [{'label': col, 'value': col} for col in columns]
 
-    filtered_x_options = [{'label': col, 'value': col} for col in columns if col not in (y_col, group_by)]
-    filtered_y_options = [{'label': 'None', 'value': 'none'}] + [{'label': col, 'value': col} for col in columns if col not in (x_col, group_by)]
-    filtered_group_by_options = [{'label': 'None', 'value': 'none'}] + [{'label': col, 'value': col} for col in columns if col not in (x_col, y_col)]
+    filtered_x_options = [{'label': col, 'value': col} for col in columns]
+    filtered_y_options = [{'label': 'None', 'value': 'none'}] + [{'label': col, 'value': col} for col in columns]
+    filtered_group_by_options = [{'label': 'None', 'value': 'none'}] + [{'label': col, 'value': col} for col in columns]
 
     return filtered_x_options, filtered_y_options, filtered_group_by_options
 
