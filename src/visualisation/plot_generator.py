@@ -1,8 +1,29 @@
+from typing import Any
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
-from api.jolpica_api import JolpicaAPI
 import pandas as pd
+from api.jolpica_api import JolpicaAPI
+from pathlib import Path
+
+# Define save directory
+PLOTS_DIR = Path(__file__).resolve().parent.parent.parent / "data/plots"
+PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+
+def save_plot(fig: Any, filename: str, plot_type: str = "static", file_format: str = "png"):
+    # Construct full save path
+    save_path = PLOTS_DIR / f"{filename}.{file_format}"
+
+    # Save for static (matplotlib/seaborn)
+    if plot_type == "static":
+        fig.savefig(save_path, format=file_format, bbox_inches="tight")
+
+    # Save for interactive (plotly)
+    elif plot_type == "interactive":
+        if file_format == "html":
+            fig.write_html(save_path)
+        else:
+            fig.write_image(save_path, format=file_format)
 
 def format_label(label):
     new_label = ""
@@ -45,7 +66,6 @@ def apply_axis_flip(fig, flip_axis: list, plot_type: str = "static"):
     for axis in flip_axis:
         flip[plot_type][axis](fig)
 
-
 def get_plot_function(plot_type: str, mode="static"):
     plot_mapping = {
         "static": {
@@ -66,6 +86,35 @@ def get_plot_function(plot_type: str, mode="static"):
     }
     return plot_mapping[mode].get(plot_type, sns.lineplot if mode == "static" else px.line)  # Default to lineplot
 
+def plot_chart(
+        df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
+        plot_type: tuple = ("static", "line"), saving: bool = True, save_format: str = None, **kwargs
+):
+    # Extract mode and specific plot type
+    mode, chart_type = plot_type
+
+    default_format = "html" if mode == "interactive" else "png"
+    save_format = save_format if save_format else default_format
+
+    # Construct filename for caching
+    filename = f"{mode}_{chart_type}_{x_col.replace('.', '_')}{'_' + y_col.replace('.', '_') if y_col else ''}_{title.replace(' ', '_')}"
+    filename = filename.lower()
+    save_path = PLOTS_DIR / f"{filename}.{save_format}"
+
+    # Generate new plot if not already saved
+    if mode == "static":
+        plot_static_chart(df, x_col=x_col, y_col=y_col, title=title,
+                          plot_type=chart_type, **kwargs)
+        if saving and not save_path.exists():
+            save_plot(plt.gcf(), filename=filename, plot_type="static", file_format=save_format)
+        return plt.gcf()
+
+    elif mode == "interactive":
+        fig = plot_interactive_chart(df, x_col=x_col, y_col=y_col, title=title,
+                                     plot_type=chart_type, **kwargs)
+        if saving and not save_path.exists():
+            save_plot(fig, filename=filename, plot_type="interactive", file_format=save_format)
+        return fig
 
 def plot_static_chart(
         df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
@@ -122,7 +171,7 @@ def plot_static_chart(
 
     # Tidy the layout
     plt.tight_layout()
-    plt.show()
+    return plt
 
 
 def plot_interactive_chart(
@@ -172,4 +221,4 @@ def plot_interactive_chart(
             )
         )
 
-    fig.show()
+    return fig
