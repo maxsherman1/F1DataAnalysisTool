@@ -12,9 +12,9 @@ def plot_static_chart(
 
     # Set theme and figure size
     plt.style.use(theme)
-    plt.figure(figsize=figsize)
+    fig, ax = plt.subplots(figsize=figsize)
 
-    apply_axis_flip(plt.gca(), flip_axis, plot_type="static")  # Flip axes if needed
+    apply_axis_flip(ax, flip_axis, plot_type="static")  # Flip axes if needed
 
     # Special handling for specific plot types
     if plot_type == "heatmap":
@@ -27,26 +27,22 @@ def plot_static_chart(
 
     # Handle pie charts separately
     if static_plot == "pie":
-        df[x_col].value_counts().plot.pie(autopct='%1.1f%%', **kwargs)
+        df[x_col].value_counts().plot.pie(autopct='%1.1f%%', ax=ax, **kwargs)
     else:
-        static_plot(data=df, x=x_col, y=y_col, hue=hue, **kwargs)
+        static_plot(data=df, x=x_col, y=y_col, hue=hue, ax=ax, **kwargs)
 
     # Add legend if hue is specified
     if hue:
-        plt.legend(title=format_label(hue), bbox_to_anchor=(1, 1), loc="upper left", fontsize=10)
-
-    # Format labels
-    x_label = format_label(x_col)
-    y_label = format_label(y_col) if y_col else ""
+        ax.legend(title=format_label(hue), bbox_to_anchor=(1, 1), loc="upper left", fontsize=10)
 
     # Add title and labels
-    plt.title(title, fontsize=16, color='white')
-    plt.xlabel(x_label, fontsize=12, color='white')
-    plt.ylabel(y_label, fontsize=12, color='white')
+    ax.set_title(title, fontsize=16, color='white')
+    ax.set_xlabel(format_label(x_col), fontsize=12, color='white')
+    ax.set_ylabel(format_label(y_col) if y_col else "", fontsize=12, color='white')
 
     # Adjust y-ticks for small numeric ranges
     if y_col and df[y_col].dtype in ['int64', 'float64'] and df[y_col].max() < 30:
-        plt.yticks(range(int(df[y_col].min()), int(df[y_col].max()) + 1))
+        ax.set_yticks(range(int(df[y_col].min()), int(df[y_col].max()) + 1))
 
     plt.grid(color="gray", linestyle="--", linewidth=0.5)
 
@@ -57,4 +53,4 @@ def plot_static_chart(
 
     # Tidy the layout
     plt.tight_layout()
-    return plt
+    return fig
