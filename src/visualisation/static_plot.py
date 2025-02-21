@@ -1,4 +1,5 @@
-from visualisation.plot_utils import format_label, apply_axis_flip, get_plot_function
+from visualisation.plot_utils import format_label, apply_axis_flip
+from enumeration.plot_types import PlotMode, PlotType, PlotFunction
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -20,13 +21,15 @@ def plot_static_chart(
         df = df[x_col]
         y_col = "Frequency"
 
-    static_plot = get_plot_function(plot_type, "static")
+
+    plot_function = PlotFunction.get_plot_function(plot_type=PlotType(plot_type), mode=PlotMode.STATIC)
+
 
     # Handle pie charts separately
-    if static_plot == "pie":
+    if plot_function == "pie":
         df[x_col].value_counts().plot.pie(autopct='%1.1f%%', ax=ax, **kwargs)
     else:
-        static_plot(data=df, x=x_col, y=y_col, hue=hue, ax=ax, **kwargs)
+        plot_function(data=df, x=x_col, y=y_col, hue=hue, ax=ax, **kwargs)
 
     # Add legend if hue is specified
     if hue:

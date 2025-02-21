@@ -1,4 +1,5 @@
-from visualisation.plot_utils import format_label, apply_axis_flip, get_plot_function
+from visualisation.plot_utils import format_label, apply_axis_flip
+from enumeration.plot_types import PlotMode, PlotType, PlotFunction
 import pandas as pd
 
 def plot_interactive_chart(
@@ -6,10 +7,7 @@ def plot_interactive_chart(
         plot_type: str = "line", hue: str = None, flip_axis: list = None,
         figsize: tuple = (700, 500), theme: str = "plotly_dark", **kwargs
 ):
-    #validate_columns(df, x_col, y_col)
-    #df = preprocess_data(df, x_col, y_col)
-
-    plot_function = get_plot_function(plot_type, "interactive")
+    plot_function = PlotFunction.get_plot_function(plot_type=PlotType(plot_type), mode=PlotMode.INTERACTIVE)
 
     # Special handling for specific plot types
     if plot_type == "heatmap":
