@@ -6,6 +6,7 @@ import api.data_preprocessing as dp
 import pandas as pd
 from typing import Dict, Any, List, Optional
 from pathlib import Path
+from enumeration.resource_types import ResourceHandler
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,28 +23,10 @@ class JolpicaAPI:
     MAXIMUM_LIMIT = 100
     DEFAULT_OFFSET = 0
 
-    # Resource type and filter validation
-    VALID_RESOURCE_TYPES = {
-        "circuits": {"optional": ["season", "round", "constructors", "drivers", "fastest", "grid", "results", "status"]},
-        "constructors": {"optional": ["season", "round", "circuits", "drivers", "fastest", "grid", "results", "status"]},
-        "constructorStandings": {"mandatory": ["season"], "optional": ["round", "constructors", "position"]},
-        "drivers": {"optional": ["season", "round", "circuits", "constructors", "fastest", "grid", "results", "status"]},
-        "driverStandings": {"mandatory": ["season"], "optional": ["round", "drivers", "position"]},
-        "laps": {"mandatory": ["season", "round"], "optional": ["drivers", "constructors", "laps"]},
-        "pitstops": {"mandatory": ["season", "round"], "optional": ["drivers", "laps", "pitstops"]},
-        "qualifying": {"optional": ["season", "round", "circuits", "constructors", "drivers", "grid", "fastest", "status"]},
-        "races": {"optional": ["season", "round", "circuits", "constructors", "drivers", "grid", "status"]},
-        "results": {"optional": ["season", "round", "circuits", "constructors", "drivers", "fastest", "grid", "status"]},
-        "seasons": {"optional": ["season", "circuits", "constructors", "drivers", "grid", "status"]},
-        "sprint": {"optional": ["season", "round"]},
-        "status": {"optional": ["status", "season", "round", "circuits", "constructors", "drivers", "results"]}
-    }
-
     # Init function validating resource type and filters
     def __init__(self, resource_type: str, params: Optional[Dict[str, Any]] = None, filters: Optional[Dict[str, Any]] = None):
         # Input validation
-        if resource_type not in self.VALID_RESOURCE_TYPES:
-            raise ValueError(f"Invalid resource type: {resource_type}. Must be one of {list(self.VALID_RESOURCE_TYPES.keys())}")
+        self.resource_handler = ResourceHandler(resource_type)
 
         # Set instance variables
         self.params = {}
@@ -77,9 +60,9 @@ class JolpicaAPI:
     # Set all the filters provided
     def set_filters(self, filters: Dict[str, Any]) -> None:
         # Get mandatory and optional filters for the resource type
-        valid_filters = self.VALID_RESOURCE_TYPES[self.get_resource_type()]
-        mandatory = valid_filters.get("mandatory", [])
-        optional = valid_filters.get("optional", [])
+        valid_filters = self.resource_handler.get_filters()
+        mandatory = valid_filters.get("mandatory")
+        optional = valid_filters.get("optional")
 
         # Check mandatory filters to see if they are present
         for key in mandatory:
