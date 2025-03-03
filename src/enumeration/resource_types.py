@@ -37,9 +37,9 @@ class ResourceType(Enum):
         return [e.name_value for e in cls]
 
     @classmethod
-    def get_optional(cls, resource_type):
-        return cls[resource_type.upper()].optional
+    def get_optional(cls, resource_type: str):
+        return cls[resource_type.replace(" ", "").upper()].optional
 
     @classmethod
-    def get_mandatory(cls, resource_type):
-        return cls[resource_type.upper()].mandatory
+    def get_mandatory(cls, resource_type: str):
+        return cls[resource_type.replace(" ", "").upper()].mandatory

@@ -5,6 +5,7 @@ from visualisation.plot_generator import plot_chart
 from api.jolpica_api import JolpicaAPI
 from enumeration.resource_types import ResourceType
 from enumeration.plot_types import PlotType
+import pandas as pd
 import api.data_preprocessing as dp
 import io
 import base64
@@ -29,6 +30,10 @@ app.layout = html.Div([
 
         html.Label("Filters:"),
         html.Div(id='filter_inputs', children=[]),
+
+        html.Button('Retrieve Data', id='retrieve_data', n_clicks=0, disabled=True),
+
+        dcc.Store(id='stored_data'),
 
         html.Label("Select Plot Type:"),
         dcc.Dropdown(id='plot_type_dropdown', options=[{'label': pt, 'value': pt.lower()} for pt in plot_types],
@@ -72,10 +77,9 @@ app.layout = html.Div([
 ])
 
 
-# Callbacks to update filters based on selected resource type
 @app.callback(
     Output('filter_inputs', 'children'),
-    [Input('resource_type', 'value')]
+    Input('resource_type', 'value')
 )
 def update_filters(resource_type):
     if not resource_type:
@@ -83,43 +87,29 @@ def update_filters(resource_type):
 
     mandatory_filters = ResourceType.get_mandatory(resource_type)
     optional_filters = ResourceType.get_optional(resource_type)
-    filter_inputs = []
 
+    filter_inputs = []
     for filter_name in mandatory_filters:
-        filter_inputs.append(
-            html.Div([
-                html.Label(f"{filter_name.capitalize()} (required):", style={'margin-right': '10px', 'min-width': '140px'}),
-                dcc.Input(id=f'filter_{filter_name}', type='text', placeholder=f'Enter {filter_name}', required=True,
-                          style={'flex': '1'})
-            ], style={'display': 'flex', 'align-items': 'center', 'margin-bottom': '5px'})
-        )
+        filter_inputs.append(html.Label(f"{filter_name.capitalize()} (required):"))
+        filter_inputs.append(dcc.Input(id=f'filter_{filter_name}', type='text', placeholder=f'Enter {filter_name}'))
 
     for filter_name in optional_filters:
-        filter_inputs.append(
-            html.Div([
-                html.Label(f"{filter_name.capitalize()} (optional):", style={'margin-right': '10px', 'min-width': '140px'}),
-                dcc.Input(id=f'filter_{filter_name}', type='text', placeholder=f'Enter {filter_name}',
-                          style={'flex': '1'})
-            ], style={'display': 'flex', 'align-items': 'center', 'margin-bottom': '5px'})
-        )
+        filter_inputs.append(html.Label(f"{filter_name.capitalize()} (optional):"))
+        filter_inputs.append(dcc.Input(id=f'filter_{filter_name}', type='text', placeholder=f'Enter {filter_name}'))
 
     return filter_inputs
 
 
-# Callbacks to update dropdowns when resource type changes
 @app.callback(
     [Output('x_axis', 'options'), Output('y_axis', 'options'), Output('group_by', 'options')],
-    [Input('resource_type', 'value')],
-    [State(f'filter_{f}', 'value') for f in ResourceType.get_mandatory("CIRCUITS") + ResourceType.get_optional("CIRCUITS")]  # Dummy list
+    [Input('stored_data', 'data')]
 )
-def update_column_options(resource_type, *filter_values):
-    if not resource_type:
+def update_column_options(stored_data):
+    if not stored_data:
         return [], [{'label': 'None', 'value': 'none'}], [{'label': 'None', 'value': 'none'}]
 
-    filters = {f: v for f, v in zip(ResourceType.get_mandatory(resource_type) + ResourceType.get_optional(resource_type), filter_values) if v}
-    data = JolpicaAPI(resource_type=resource_type, filters=filters).get_cleaned_data()
+    data = pd.read_json(stored_data, orient='split')
     columns = dp.get_columns(data)
-    options = [{'label': col, 'value': col} for col in columns]
 
     filtered_x_options = [{'label': col, 'value': col} for col in columns]
     filtered_y_options = [{'label': 'None', 'value': 'none'}] + [{'label': col, 'value': col} for col in columns]
@@ -128,23 +118,59 @@ def update_column_options(resource_type, *filter_values):
     return filtered_x_options, filtered_y_options, filtered_group_by_options
 
 
-# Callbacks
+@app.callback(
+    Output('stored_data', 'data'),
+    [Input('retrieve_data', 'n_clicks')],
+    [State('resource_type', 'value')]
+    + [State(f'filter_{f}', 'value') for f in ResourceType.get_mandatory("PITSTOPS")]  # Dummy initialization
+)
+def retrieve_data(n_clicks, resource_type, *filter_values):
+    if n_clicks == 0 or not resource_type:
+        return None
+
+    mandatory_filters = ResourceType.get_mandatory(resource_type)
+    optional_filters = ResourceType.get_optional(resource_type)
+
+    filters = {f: v for f, v in zip(mandatory_filters + optional_filters, filter_values) if v is not None}
+
+    if not all(f in filters for f in mandatory_filters):
+        return None  # Ensure all mandatory filters are provided
+
+    jolpica_api = JolpicaAPI(resource_type=resource_type.replace(" ", "").lower(), filters=filters)
+    df = jolpica_api.get_cleaned_data()
+    return df.to_json(date_format='iso', orient='split')
+
+@app.callback(
+    Output('retrieve_data', 'disabled'),
+    [Input('resource_type', 'value')],
+    [State(f'filter_{f}', 'value') for f in ResourceType.get_mandatory("CIRCUITS")]  # Dummy initialization
+)
+def update_retrieve_button(resource_type, *filter_values):
+    if not resource_type:
+        return True  # Disable button if no resource type is selected
+
+    mandatory_filters = ResourceType.get_mandatory(resource_type)
+    filled_values = [v for v in filter_values[:len(mandatory_filters)] if v]  # Get values for actual mandatory filters
+
+    return not all(filled_values)  # Enable button only if all required filters are filled
+
+
 @app.callback(
     Output('plot_area', 'figure'),
     [Input('generate_plot', 'n_clicks')],
-    [State('resource_type', 'value'), State('x_axis', 'value'),
+    [State('stored_data', 'data'), State('x_axis', 'value'),
      State('y_axis', 'value'), State('group_by', 'value'), State('plot_mode', 'value'),
      State('plot_type_dropdown', 'value'), State('flip_axis', 'value')]
 )
-def update_plot(n_clicks, resource_type, x_col, y_col, group_by, plot_mode, plot_type, flip_axis):
-    if not x_col or not resource_type:
+def update_plot(n_clicks, stored_data, x_col, y_col, group_by, plot_mode, plot_type, flip_axis):
+    if not stored_data or not x_col:
         return go.Figure()
 
     y_col = None if y_col == 'none' else y_col
     group_by = None if group_by == 'none' else group_by
 
-    data = JolpicaAPI(resource_type=resource_type).get_cleaned_data()
-    fig = plot_chart(data, x_col, y_col, title=f"F1 {resource_type} Analysis", plot_type=(plot_mode, plot_type),
+    data = pd.read_json(stored_data, orient='split')
+    fig = plot_chart(data, x_col, y_col, title="F1 Data Analysis", plot_type=(plot_mode, plot_type),
                      flip_axis=['x'] if 'flip_x' in flip_axis else (['y'] if 'flip_y' in flip_axis else None))
 
     if plot_mode == 'static':
