@@ -104,20 +104,28 @@ def get_column_min_max(df: pd.DataFrame, column: str) -> Tuple[float, float] | T
         return df[column].min(), df[column].max()
     return None, None
 
-def convert_to_ms(df: pd.DataFrame) -> pd.DataFrame:
+def convert_to_ms(df: pd.DataFrame, column: str = None) -> pd.DataFrame:
     def time_to_ms(time_str):
         time_parts = str(time_str).split(":")
         if len(time_parts) == 2:
             minutes, rest = time_parts
             seconds, milliseconds = rest.split(".") if "." in rest else (rest, "0")
             return (int(minutes) * 60000) + (int(seconds) * 1000) + int(milliseconds)
-        return None
+        if len(time_parts) == 1:
+            time_parts = str(time_str).split(".")
+            if len(time_parts) == 2:
+                seconds, milliseconds = time_parts
+                return (int(seconds) * 1000) + int(milliseconds)
+        return time_str
 
     try:
-        for column in get_columns(df):
-            if "time" in column:
-                df[column] = df[column].apply(time_to_ms)
-        logging.info("Time values converted to milliseconds in all time columns.")
+        if column is None:
+            for column in get_columns(df):
+                if "time" or "duration" in column:
+                    df[column] = df[column].apply(time_to_ms)
+            logging.info("Time values converted to milliseconds in all time columns.")
+        else:
+            df[column] = df[column].apply(time_to_ms)
     except Exception as e:
         logging.error(f"Error converting time to milliseconds: {e}")
     return df
