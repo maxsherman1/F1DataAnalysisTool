@@ -6,8 +6,10 @@ def get_inner_key_path(data: Dict[str, Any], resource_type: str) -> Optional[Lis
         path = path or []
 
         # Resource type input filtering
-        if target.lower() in {"results", "qualifying"}:
+        if target.lower()=="results":
             target = "Races"
+        elif target.lower()=="qualifying":
+            target = "QualifyingResults"
 
         # if the provided dictionary is not a dictionary nor list, return None
         if not isinstance(nested, (dict, list)):
