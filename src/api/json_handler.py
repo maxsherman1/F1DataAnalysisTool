@@ -2,14 +2,14 @@ from typing import Dict, Any, List, Optional
 
 # Returns the path of the inner data (the actual data)
 def get_inner_key_path(data: Dict[str, Any], resource_type: str) -> Optional[List[str]]:
+    # Resource type input filtering
+    if resource_type.lower() == "qualifying":
+        resource_type = "QualifyingResults"
+    elif resource_type.lower() == "results":
+        resource_type = "Races"
+
     def search_inner_keys(nested: Any, target: str, path: Optional[List[str]] = None) -> Optional[List[str]]:
         path = path or []
-
-        # Resource type input filtering
-        if target.lower()=="results":
-            target = "Races"
-        elif target.lower()=="qualifying":
-            target = "QualifyingResults"
 
         # if the provided dictionary is not a dictionary nor list, return None
         if not isinstance(nested, (dict, list)):
