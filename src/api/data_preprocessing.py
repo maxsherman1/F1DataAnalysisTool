@@ -60,35 +60,29 @@ def is_loaded_csv(file_name: str) -> bool:
 
 # Function that removes any nested dictionaries by flattening the inner data.
 def preprocess_data(inner_data: List[Dict]) -> List[Dict]:
+    def flatten(data: Dict) -> List[Dict]:
+        flattened_entries = []
+        base_data = {k: v for k, v in data.items() if not isinstance(v, list) or not v or not isinstance(v[0], dict)}
 
-    # Function responsible for flattening the data
-    def flatten(data: Dict) -> Dict:
-        # Empty dictionary for updated data
-        flattened_data = {}
-        # Loop through the data for each entry in the dictionary
-        for key, value in data.items():
-            # Check for nested dictionaries
-            if isinstance(value, list) and isinstance(value[0], dict):
-                # Check the length of the nested dictionary
-                if len(value) == 1:
-                    # If length is 1, update the key with no index
-                    for k, v in value[0].items():
-                        flattened_data[f"{key}.{k}"] = v
-                elif len(value) > 1:
-                    # If length is greater than 1, include indexing in the new key
-                    for idx, item in enumerate(value, start=1):
-                        for k, v in item.items():
-                            flattened_data[f"{key}.{idx}.{k}"] = v
+        nested_lists = {k: v for k, v in data.items() if isinstance(v, list) and v and isinstance(v[0], dict)}
 
-            # If no nested dictionary found just update the data
-            else:
-                flattened_data[key] = value
+        if not nested_lists:
+            return [base_data]
 
-        # Flattened data
-        return flattened_data
+        for key, nested_dicts in nested_lists.items():
+            for nested_dict in nested_dicts:
+                new_entry = base_data.copy()
+                for k, v in nested_dict.items():
+                    new_entry[f"{key}.{k}"] = v
+                flattened_entries.append(new_entry)
 
-    # Return the flattened data for each entry in inner data if inner data has been provided
-    return [flatten(entry) for entry in inner_data] if inner_data else inner_data
+        return flattened_entries
+
+    flattened_data = []
+    for entry in inner_data:
+        flattened_data.extend(flatten(entry))
+
+    return flattened_data
 
 def get_columns(df: pd.DataFrame) -> List[str]:
     return list(df.columns)
@@ -104,7 +98,7 @@ def get_column_min_max(df: pd.DataFrame, column: str) -> Tuple[float, float] | T
         return df[column].min(), df[column].max()
     return None, None
 
-def convert_to_ms(df: pd.DataFrame, column: str = None) -> pd.DataFrame:
+def convert_to_ms(df: pd.DataFrame, column: List = None) -> pd.DataFrame:
     def time_to_ms(time_str):
         time_parts = str(time_str).split(":")
         if len(time_parts) == 2:
@@ -125,7 +119,8 @@ def convert_to_ms(df: pd.DataFrame, column: str = None) -> pd.DataFrame:
                     df[column] = df[column].apply(time_to_ms)
             logging.info("Time values converted to milliseconds in all time columns.")
         else:
-            df[column] = df[column].apply(time_to_ms)
+            for col in column:
+                df[col] = df[col].apply(time_to_ms)
     except Exception as e:
         logging.error(f"Error converting time to milliseconds: {e}")
     return df
