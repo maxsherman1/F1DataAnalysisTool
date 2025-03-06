@@ -78,6 +78,11 @@ def extend_inner_data(data: List, additional_data: List) -> List:
     last_inner_entry = data[-1]
     first_additional_entry = additional_data[0]
 
+    # Ensure both elements are dictionaries before merging
+    if not isinstance(last_inner_entry, dict) or not isinstance(first_additional_entry, dict):
+        data.extend(additional_data)
+        return data
+
     # Find the keys present in both entries
     common_keys = set(last_inner_entry.keys()) & set(first_additional_entry.keys())
 
@@ -94,18 +99,14 @@ def extend_inner_data(data: List, additional_data: List) -> List:
         data.extend(additional_data)
         return data
 
-    # Identify the keys containing unique data values
-    unique_data_keys = {key for key in common_keys if last_inner_entry[key] != first_additional_entry[key]}
+    # Ensure that both entries have lists under the common keys
+    for key in common_keys:
+        if isinstance(last_inner_entry[key], list) and isinstance(first_additional_entry[key], list):
+            # Identify unique entries and merge them
+            existing_values = [item for item in last_inner_entry[key] if isinstance(item, dict)]
+            new_values = [item for item in first_additional_entry[key] if isinstance(item, dict) and item not in existing_values]
+            last_inner_entry[key].extend(new_values)
 
-    # For each unique key, append the unique data dynamically
-    for key in unique_data_keys:
-        existing_values = {tuple(sorted(item.items())) for item in last_inner_entry[key]}
-        new_values = [item for item in first_additional_entry[key] if tuple(sorted(item.items())) not in existing_values]
-        last_inner_entry[key].extend(new_values)
-
-    # Skip the first additional entry
-    additional_data = additional_data[1:]
-
-    # Extend and return the additional data
-    data.extend(additional_data) if additional_data else None
+        # Skip first additional entry and extend remaining data
+    data.extend(additional_data[1:])
     return data
