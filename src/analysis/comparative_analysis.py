@@ -1,6 +1,6 @@
 import pandas as pd
 import logging
-from scipy.stats import ttest_rel, ttest_ind, f_oneway, spearmanr, pearsonr, wilcoxon
+from scipy.stats import ttest_rel, ttest_ind, f_oneway, spearmanr, pearsonr, wilcoxon, chi2_contingency
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -56,4 +56,13 @@ def wilcoxon_test(df: pd.DataFrame, col1: str, col2: str) -> tuple[float, float]
         raise KeyError(f"Columns {col1} or {col2} not found in DataFrame")
 
     stat, p_value = wilcoxon(df[col1], df[col2])
+    return stat, p_value
+
+def chi_square_test(df: pd.DataFrame, col1: str, col2: str) -> tuple[float, float]:
+    if col1 not in df.columns or col2 not in df.columns:
+        logging.error(f"Columns {col1} or {col2} not found in DataFrame")
+        raise KeyError(f"Columns {col1} or {col2} not found in DataFrame")
+
+    contingency_table = pd.crosstab(df[col1], df[col2])
+    stat, p_value, _, _ = chi2_contingency(contingency_table)
     return stat, p_value
