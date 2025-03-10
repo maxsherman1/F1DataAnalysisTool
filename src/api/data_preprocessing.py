@@ -100,11 +100,18 @@ def get_column_min_max(df: pd.DataFrame, column: str) -> Tuple[float, float] | T
 
 def convert_to_ms(df: pd.DataFrame, column: List = None) -> pd.DataFrame:
     def time_to_ms(time_str):
+
+        if isinstance(time_str, (int, float)):
+            return time_str
+
         time_parts = str(time_str).split(":")
+
         if len(time_parts) == 2:
             minutes, rest = time_parts
-            seconds, milliseconds = rest.split(".") if "." in rest else (rest, "0")
-            return (int(minutes) * 60000) + (int(seconds) * 1000) + int(milliseconds)
+            seconds_parts = rest.split(".")
+            if len(seconds_parts) == 2:
+                seconds, milliseconds = seconds_parts
+                return (int(minutes) * 60000) + (int(seconds) * 1000) + int(milliseconds)
         if len(time_parts) == 1:
             time_parts = str(time_str).split(".")
             if len(time_parts) == 2:
@@ -114,13 +121,20 @@ def convert_to_ms(df: pd.DataFrame, column: List = None) -> pd.DataFrame:
 
     try:
         if column is None:
-            for column in get_columns(df):
-                if "time" or "duration" in column:
-                    df[column] = df[column].apply(time_to_ms)
+            for col in get_columns(df):
+                if any(part in ["time", "duration"] for part in col.split(".")):
+                    df[col] = df[col].apply(time_to_ms)
             logging.info("Time values converted to milliseconds in all time or duration columns.")
         else:
-            for col in column:
+            for col in get_columns(df):
                 df[col] = df[col].apply(time_to_ms)
     except Exception as e:
         logging.error(f"Error converting time to milliseconds: {e}")
+    return df
+
+def convert_to_numeric(df: pd.DataFrame) -> pd.DataFrame:
+    for col in get_columns(df):
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            df[col] = df[col].apply(lambda x: pd.to_numeric(x, errors="ignore"))
+    logging.info("Converted applicable columns to numeric values.")
     return df
