@@ -117,7 +117,7 @@ def convert_to_ms(df: pd.DataFrame, column: List = None) -> pd.DataFrame:
             for column in get_columns(df):
                 if "time" or "duration" in column:
                     df[column] = df[column].apply(time_to_ms)
-            logging.info("Time values converted to milliseconds in all time columns.")
+            logging.info("Time values converted to milliseconds in all time or duration columns.")
         else:
             for col in column:
                 df[col] = df[col].apply(time_to_ms)

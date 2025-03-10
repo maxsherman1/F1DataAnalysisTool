@@ -227,6 +227,6 @@ class JolpicaAPI:
             return dp.load_from_csv(file_name)
 
         flattened_data = dp.preprocess_data(self.get_inner_data())
-        data = dp.convert_to_dataframe(flattened_data)
+        data = dp.convert_to_ms(dp.convert_to_dataframe(flattened_data))
         dp.save_to_csv(data, file_name)
         return data
