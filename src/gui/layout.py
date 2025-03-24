@@ -9,11 +9,13 @@ def create_layout(app):
         html.Div([
             html.H3("Retrieve F1 Data"),
             html.Label("Select Resource Type:"),
-            dcc.Dropdown(id='resource_type', options=[{'label': name, 'value': name} for name in ResourceType.get_all_names()],
+            dcc.Dropdown(id='resource_type', options=[{'label': name, 'value': name.lower()} for name in ResourceType.get_all_names()],
                          placeholder="Select Resource Type"),
 
             html.Label("Filters:"),
             html.Div(id='filter_inputs', children=[]),
+
+            dcc.Store(id='filters_metadata', storage_type='memory'),
 
             html.Button('Retrieve Data', id='retrieve_data', n_clicks=0, className="btn-primary"),
             dcc.Store(id='stored_data'),
@@ -41,6 +43,15 @@ def create_layout(app):
                             {'label': 'Static', 'value': 'static'},
                             {'label': 'Interactive', 'value': 'interactive'}
                         ], value='interactive', inline=True),
+
+                        dcc.Checklist(
+                            id='flip_axis',
+                            options=[
+                                {'label': 'Flip X axes', 'value': 'flip_x'},
+                                {'label': 'Flip Y axes', 'value': 'flip_y'}
+                            ],
+                            value=[]
+                        ),
 
                         html.Button('Generate Plot', id='generate_plot', n_clicks=0),
                         html.Button('Save Plot', id='save_plot', n_clicks=0),
