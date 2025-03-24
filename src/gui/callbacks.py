@@ -1,8 +1,10 @@
+import logging
+from dash import dcc, html
 from dash.dependencies import Input, Output, State, ALL
 from enumeration.resource_types import ResourceType
 from api.jolpica_api import JolpicaAPI
-import logging
-from dash import dcc, html
+import api.data_preprocessing as dp
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -69,9 +71,6 @@ def register_callbacks(app):
             filter_dict = {}
             all_filters = mandatory_filters + optional_filters
 
-            print(f"filter values: {filter_values}, all filters: {all_filters}")
-            print(f"filter values: {type(filter_values)}, all filters: {type(all_filters)}")
-
             # Ensure the number of filter values matches the number of filters
             if len(filter_values) != len(all_filters):
                 logging.error(
@@ -123,3 +122,26 @@ def register_callbacks(app):
             return True  # Disable button if not all mandatory filters are filled
 
         return False  # Enable button if all mandatory filters are filled
+
+    @app.callback(
+        [Output('x_axis', 'options'),
+         Output('y_axis', 'options'),
+         Output('group_by', 'options')],
+        [Input('stored_data', 'data'),
+         Input('x_axis', 'value'),
+         Input('y_axis', 'value'),
+         Input('group_by', 'value')]
+    )
+    def update_plot_column_options(stored_data, x_col, y_col, group_by):
+        if not stored_data:
+            return [], [{'label': 'None', 'value': 'none'}], [{'label': 'None', 'value': 'none'}]
+
+        data = pd.read_json(stored_data, orient='split')
+        columns = dp.get_columns(data)
+
+        filtered_x_options = [{'label': col, 'value': col} for col in columns if col not in (y_col, group_by)]
+        filtered_y_options = [{'label': 'None', 'value': 'none'}] + [{'label': col, 'value': col} for col in columns if col not in (x_col, group_by)]
+        filtered_group_by_options = [{'label': 'None', 'value': 'none'}] + [{'label': col, 'value': col} for col in
+                                                                            columns if col not in (x_col, y_col)]
+
+        return filtered_x_options, filtered_y_options, filtered_group_by_options
