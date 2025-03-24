@@ -1,4 +1,6 @@
 from dash import dcc, html
+
+from enumeration.plot_types import PlotType
 from enumeration.resource_types import ResourceType
 
 def create_layout(app):
@@ -27,7 +29,8 @@ def create_layout(app):
                     html.Div([
                         html.H3("Visualisation Settings"),
                         html.Label("Select Plot Type:"),
-                        dcc.Dropdown(id='plot_type_dropdown', placeholder="Select Plot Type"),
+                        dcc.Dropdown(id='plot_type_dropdown', options=[{'label': name.capitalize(), 'value': name} for name in PlotType.get_all_names()],
+                                     placeholder="Select Plot Type"),
 
                         html.Label("Select X-axis:"),
                         dcc.Dropdown(id='x_axis', placeholder="Select X-axis", clearable=False),

@@ -43,3 +43,17 @@ class ResourceType(Enum):
     @classmethod
     def get_mandatory(cls, resource_type: str):
         return cls[resource_type.replace(" ", "").upper()].mandatory
+
+    @classmethod
+    def get_all_filters(cls):
+        # Create a set to collect unique filter names
+        all_filters = set()
+
+        # Iterate over all resource types in the enum
+        for resource in cls:
+            # Add both mandatory and optional filters to the set (sets automatically handle uniqueness)
+            all_filters.update(resource.mandatory)
+            all_filters.update(resource.optional)
+
+        # Return the sorted list of unique filter names
+        return sorted(list(all_filters))

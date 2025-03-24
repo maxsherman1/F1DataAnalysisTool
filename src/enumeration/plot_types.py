@@ -15,6 +15,10 @@ class PlotType(Enum):
     HEATMAP = "heatmap"
     PIE = "pie"
 
+    @classmethod
+    def get_all_names(cls):
+        return [e.value for e in cls]
+
 class PlotFunction(Enum):
     STATIC = {
         PlotType.LINE: sns.lineplot,
