@@ -57,7 +57,13 @@ def create_layout(app):
                         ),
 
                         html.Button('Generate Plot', id='generate_plot', n_clicks=0, type='button'),
+                        dcc.Store(id="plot_figure", storage_type="memory"),
+
+                        html.Label("File Format:"),
+                        dcc.Dropdown(id='file_format', placeholder="Select File Format"),
+
                         html.Button('Save Plot', id='save_plot', n_clicks=0, type='button'),
+                        dcc.Download(id="download_plot")
                     ], style={'flex': 1, 'padding': '10px'}),
 
                     # Visualisation Output

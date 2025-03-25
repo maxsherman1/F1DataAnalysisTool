@@ -8,8 +8,7 @@ from enumeration.resource_types import ResourceType
 from api.jolpica_api import JolpicaAPI
 import api.data_preprocessing as dp
 from visualisation.plot_generator import plot_chart
-from visualisation.plot_saving import get_plots_directory
-
+from visualisation.plot_saving import get_plots_directory, save_plot
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -152,7 +151,8 @@ def register_callbacks(app):
         return filtered_x_options, filtered_y_options, filtered_group_by_options
 
     @app.callback(
-        Output('plot_area', 'children'),
+        [Output('plot_area', 'children'),
+         Output('plot_figure', 'data')],
         [Input('generate_plot', 'n_clicks')],
         [State('stored_data', 'data'),
          State('plot_mode', 'value'),
@@ -181,19 +181,19 @@ def register_callbacks(app):
 
         # Static Mode: Convert to PNG
         if plot_mode == 'static':
-            plots_dir = get_plots_directory()  # Should point to /data/plots
-            os.makedirs(plots_dir, exist_ok=True)
-            path = os.path.join(plots_dir, "temp.png")
-            fig.savefig(path, format='png', bbox_inches='tight')
+            save_plot(fig, "temp", plot_type=plot_mode, file_format='png')
+            save_plot(fig, "temp", plot_type=plot_mode, file_format='jpg')
+            save_plot(fig, "temp", plot_type=plot_mode, file_format='pdf')
+            save_plot(fig, "temp", plot_type=plot_mode, file_format='svg')
+
             timestamp = int(time.time())
-            print(f"Saved to {path} -- Exists: {os.path.exists(path)}")
             return html.Img(
                 src=f"/data/plots/temp.png?v={timestamp}",
                 style={'width': '100%', 'height': 'auto'},
                 key=str(timestamp)
-            )
+            ), None
         else:
-            return dcc.Graph(figure=fig)
+            return dcc.Graph(figure=fig), fig
 
     @app.callback(
         Output('generate_plot', 'disabled'),
@@ -203,5 +203,59 @@ def register_callbacks(app):
     )
     def update_generate_plot_button(data, plot_type, x_axis):
         if data and plot_type and x_axis:
+            return False
+        return True
+
+    @app.callback(
+        Output('file_format', 'options'),
+        Input('plot_mode', 'value')
+    )
+    def update_file_format_dropdown(plot_mode):
+
+        file_formats = []
+
+        file_formats.append({'label': 'PNG', 'value': 'png'})
+        file_formats.append({'label': 'JPG', 'value': 'jpg'})
+        file_formats.append({'label': 'PDF', 'value': 'pdf'})
+        file_formats.append({'label': 'SVG', 'value': 'svg'})
+
+        if plot_mode == "interactive":
+            file_formats.append({'label': 'HTML', 'value': 'html'})
+
+        return file_formats
+
+    @app.callback(
+        Output('download_plot', 'data'),
+        [Input('save_plot', 'n_clicks')],
+        [State('plot_figure', 'data'),
+         State('file_format', 'value'),
+         State('plot_mode', 'value')]
+    )
+    def save_plot_callback(n_clicks, data, file_format, plot_mode):
+        print(n_clicks, data, file_format, plot_mode)
+
+        if n_clicks == 0 or not file_format:
+            return None
+
+        if plot_mode == "interactive":
+            plots_dir = get_plots_directory()
+            os.makedirs(plots_dir, exist_ok=True)
+            filename = f"plot_{int(time.time())}"
+            save_plot(data, filename, plot_type=plot_mode, file_format=file_format)
+            src = os.path.join(plots_dir, f'{filename}.{file_format}')
+            print(src)
+        else:
+            src = os.path.join(get_plots_directory(), f'temp.{file_format}')
+            print(src)
+        return dcc.send_file(src)  # Return the file to download
+
+    @app.callback(
+        Output('save_plot', 'disabled'),
+        [Input('generate_plot', 'n_clicks')],
+        [Input('plot_area', 'children')],
+        [Input('file_format', 'value')]
+    )
+    def update_generate_plot_button(n_clicks, plot_area, file_format):
+        if n_clicks > 0 and plot_area is not None and file_format is not None:
             return False
         return True
