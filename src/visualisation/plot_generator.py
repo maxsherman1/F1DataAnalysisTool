@@ -10,7 +10,7 @@ def generate_filename(mode: str, chart_type: str, x_col: str, y_col: str, title:
 
 def plot_chart(
         df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
-        plot_type: tuple = ("static", "line"), saving: bool = True, save_format: str = None, **kwargs
+        plot_type: tuple = ("static", "line"), saving: bool = False, save_format: str = None, **kwargs
 ):
     # Extract mode and specific plot type
     mode, chart_type = plot_type
