@@ -1,10 +1,15 @@
 import logging
+import os
+import time
 from dash import dcc, html
 from dash.dependencies import Input, Output, State, ALL
+import pandas as pd
 from enumeration.resource_types import ResourceType
 from api.jolpica_api import JolpicaAPI
 import api.data_preprocessing as dp
-import pandas as pd
+from visualisation.plot_generator import plot_chart
+from visualisation.plot_saving import get_plots_directory
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -145,3 +150,58 @@ def register_callbacks(app):
                                                                             columns if col not in (x_col, y_col)]
 
         return filtered_x_options, filtered_y_options, filtered_group_by_options
+
+    @app.callback(
+        Output('plot_area', 'children'),
+        [Input('generate_plot', 'n_clicks')],
+        [State('stored_data', 'data'),
+         State('plot_mode', 'value'),
+         State('plot_type_dropdown', 'value'),
+         State('x_axis', 'value'),
+         State('y_axis', 'value'),
+         State('group_by', 'value'),
+         State('flip_axis', 'value')]
+    )
+    def update_plot(n_clicks, stored_data, plot_mode, plot_type, x_col, y_col, group_by, flip_axis):
+        if n_clicks == 0 or not stored_data or not x_col:
+            return dcc.Graph()
+
+        y_col = None if y_col == 'none' else y_col
+        group_by = None if group_by == 'none' else group_by
+
+        data = pd.read_json(stored_data, orient='split')
+
+        fig = plot_chart(
+            data, x_col, y_col,
+            title="F1 Data Analysis Plot",
+            plot_type=(plot_mode, plot_type),
+            hue=group_by,
+            flip_axis=flip_axis
+        )
+
+        # Static Mode: Convert to PNG
+        if plot_mode == 'static':
+            plots_dir = get_plots_directory()  # Should point to /data/plots
+            os.makedirs(plots_dir, exist_ok=True)
+            path = os.path.join(plots_dir, "temp.png")
+            fig.savefig(path, format='png', bbox_inches='tight')
+            timestamp = int(time.time())
+            print(f"Saved to {path} -- Exists: {os.path.exists(path)}")
+            return html.Img(
+                src=f"/data/plots/temp.png?v={timestamp}",
+                style={'width': '100%', 'height': 'auto'},
+                key=str(timestamp)
+            )
+        else:
+            return dcc.Graph(figure=fig)
+
+    @app.callback(
+        Output('generate_plot', 'disabled'),
+        [Input('stored_data', 'data')],
+        [Input('plot_type_dropdown', 'value')],
+        [Input('x_axis', 'value')]
+    )
+    def update_generate_plot_button(data, plot_type, x_axis):
+        if data and plot_type and x_axis:
+            return False
+        return True
