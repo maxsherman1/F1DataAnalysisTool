@@ -50,20 +50,18 @@ def create_layout(app):
                         dcc.Checklist(
                             id='flip_axis',
                             options=[
-                                {'label': 'Flip X axes', 'value': 'flip_x'},
-                                {'label': 'Flip Y axes', 'value': 'flip_y'}
+                                {'label': 'Flip X axes', 'value': 'x'},
+                                {'label': 'Flip Y axes', 'value': 'y'}
                             ],
                             value=[]
                         ),
 
-                        html.Button('Generate Plot', id='generate_plot', n_clicks=0),
-                        html.Button('Save Plot', id='save_plot', n_clicks=0),
+                        html.Button('Generate Plot', id='generate_plot', n_clicks=0, type='button'),
+                        html.Button('Save Plot', id='save_plot', n_clicks=0, type='button'),
                     ], style={'flex': 1, 'padding': '10px'}),
 
                     # Visualisation Output
-                    html.Div([
-                        dcc.Graph(id='plot_area')
-                    ], style={'flex': 3, 'padding': '10px'}),
+                    html.Div(id='plot_area', style={'flex': 3, 'padding': '10px'}),
                 ], style={'display': 'flex', 'width': '100%', 'height': '80%'}),
             ]),
             dcc.Tab(label="Data Analysis", value="analysis", children=[
