@@ -164,7 +164,7 @@ def register_callbacks(app):
     )
     def update_plot(n_clicks, stored_data, plot_mode, plot_type, x_col, y_col, group_by, flip_axis):
         if n_clicks == 0 or not stored_data or not x_col:
-            return dcc.Graph()
+            return dcc.Graph(), {}
 
         y_col = None if y_col == 'none' else y_col
         group_by = None if group_by == 'none' else group_by
@@ -181,19 +181,19 @@ def register_callbacks(app):
 
         # Static Mode: Convert to PNG
         if plot_mode == 'static':
-            save_plot(fig, "temp", plot_type=plot_mode, file_format='png')
-            save_plot(fig, "temp", plot_type=plot_mode, file_format='jpg')
-            save_plot(fig, "temp", plot_type=plot_mode, file_format='pdf')
-            save_plot(fig, "temp", plot_type=plot_mode, file_format='svg')
+            save_plot(fig, "cache_static", plot_type=plot_mode, file_format='png')
+            save_plot(fig, "cache_static", plot_type=plot_mode, file_format='jpg')
+            save_plot(fig, "cache_static", plot_type=plot_mode, file_format='pdf')
+            save_plot(fig, "cache_static", plot_type=plot_mode, file_format='svg')
 
             timestamp = int(time.time())
             return html.Img(
-                src=f"/data/plots/temp.png?v={timestamp}",
+                src=f"/data/plots/cache_static.png?v={timestamp}",
                 style={'width': '100%', 'height': 'auto'},
                 key=str(timestamp)
-            ), None
+            ), {'figure': None, 'plot_mode': plot_mode}
         else:
-            return dcc.Graph(figure=fig), fig
+            return dcc.Graph(figure=fig), {'figure': fig, 'plot_mode': plot_mode}
 
     @app.callback(
         Output('generate_plot', 'disabled'),
@@ -208,9 +208,10 @@ def register_callbacks(app):
 
     @app.callback(
         Output('file_format', 'options'),
-        Input('plot_mode', 'value')
+        Input('plot_figure', 'data')
     )
-    def update_file_format_dropdown(plot_mode):
+    def update_file_format_dropdown(data):
+        plot_mode = data.get('plot_mode')
 
         file_formats = []
 
@@ -228,25 +229,22 @@ def register_callbacks(app):
         Output('download_plot', 'data'),
         [Input('save_plot', 'n_clicks')],
         [State('plot_figure', 'data'),
-         State('file_format', 'value'),
-         State('plot_mode', 'value')]
+         State('file_format', 'value')]
     )
-    def save_plot_callback(n_clicks, data, file_format, plot_mode):
-        print(n_clicks, data, file_format, plot_mode)
-
+    def save_plot_callback(n_clicks, data, file_format):
         if n_clicks == 0 or not file_format:
             return None
+
+        plot_mode = data.get('plot_mode')
 
         if plot_mode == "interactive":
             plots_dir = get_plots_directory()
             os.makedirs(plots_dir, exist_ok=True)
-            filename = f"plot_{int(time.time())}"
-            save_plot(data, filename, plot_type=plot_mode, file_format=file_format)
+            filename = "cache_interactive"
+            save_plot(data.get('figure'), filename, plot_type=plot_mode, file_format=file_format)
             src = os.path.join(plots_dir, f'{filename}.{file_format}')
-            print(src)
         else:
-            src = os.path.join(get_plots_directory(), f'temp.{file_format}')
-            print(src)
+            src = os.path.join(get_plots_directory(), f'cache_static.{file_format}')
         return dcc.send_file(src)  # Return the file to download
 
     @app.callback(
