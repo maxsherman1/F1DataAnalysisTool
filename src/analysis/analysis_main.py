@@ -33,9 +33,7 @@ def run_analysis(df, analysis_type, column_1, column_2, additional_param):
                                AnalysisFunction.LINEAR_REGRESSION.value["label"],
                                AnalysisFunction.ARIMA_MODEL.value["label"],
                                AnalysisFunction.HOLT_WINTERS.value["label"]]:
-            if not additional_param:
-                raise ValueError(f"Additional parameter is required for {analysis_type}")
-            result = analysis_func(df, column_1, additional_param)
+            result = analysis_func(df, column_1)
             return {"result": result.tolist(), "method": analysis_type}
 
         else:

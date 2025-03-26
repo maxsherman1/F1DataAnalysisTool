@@ -14,12 +14,12 @@ def paired_t_test(df: pd.DataFrame, col1: str, col2: str) -> tuple[float, float]
     return stat, p_value
 
 
-def unpaired_t_test(df1: pd.DataFrame, df2: pd.DataFrame, col: str) -> tuple[float, float]:
-    if col not in df1.columns or col not in df2.columns:
-        logging.error(f"Column {col} not found in one of the DataFrames")
-        raise KeyError(f"Column {col} not found in one of the DataFrames")
+def unpaired_t_test(df: pd.DataFrame, col1: str, col2: str) -> tuple[float, float]:
+    if col1 not in df.columns or col2 not in df.columns:
+        logging.error(f"Column {col1} or {col2} not found in one of the DataFrames")
+        raise KeyError(f"Column {col1} or {col2} not found in one of the DataFrames")
 
-    stat, p_value = ttest_ind(df1[col], df2[col])
+    stat, p_value = ttest_ind(df[col1], df[col2])
     return stat, p_value
 
 
@@ -32,22 +32,20 @@ def anova_test(df: pd.DataFrame, col: str, group_col: str) -> tuple[float, float
     stat, p_value = f_oneway(*groups)
     return stat, p_value
 
-
-def perform_correlation_analysis(df: pd.DataFrame, col1: str, col2: str, method: str = 'pearson'):
-    logging.info(f"Performing {method} correlation analysis between {col1} and {col2}.")
-
+def perform_pearson_analysis(df: pd.DataFrame, col1: str, col2: str):
     if col1 not in df.columns or col2 not in df.columns:
         logging.error(f"Columns {col1} or {col2} not found in DataFrame")
         raise KeyError(f"Columns {col1} or {col2} not found in DataFrame")
 
-    if method == 'pearson':
-        corr, p_value = pearsonr(df[col1], df[col2])
-    elif method == 'spearman':
-        corr, p_value = spearmanr(df[col1], df[col2])
-    else:
-        raise ValueError("Unsupported method. Use 'pearson' or 'spearman'.")
+    corr, p_value = pearsonr(df[col1], df[col2])
+    return corr, p_value
 
-    logging.info(f"Correlation coefficient: {corr}, p-value: {p_value}")
+def perform_spearman_analysis(df: pd.DataFrame, col1: str, col2: str):
+    if col1 not in df.columns or col2 not in df.columns:
+        logging.error(f"Columns {col1} or {col2} not found in DataFrame")
+        raise KeyError(f"Columns {col1} or {col2} not found in DataFrame")
+
+    corr, p_value = spearmanr(df[col1], df[col2])
     return corr, p_value
 
 def wilcoxon_test(df: pd.DataFrame, col1: str, col2: str) -> tuple[float, float]:
