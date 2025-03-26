@@ -122,7 +122,7 @@ def convert_to_ms(df: pd.DataFrame, column: List = None) -> pd.DataFrame:
     try:
         if column is None:
             for col in get_columns(df):
-                if any(part in ["time", "duration"] for part in col.split(".")):
+                if any(part in ["time", "duration", "Q1", "Q2", "Q3"] for part in col.split(".")):
                     df[col] = df[col].apply(time_to_ms)
             logging.info("Time values converted to milliseconds in all time or duration columns.")
         else:
