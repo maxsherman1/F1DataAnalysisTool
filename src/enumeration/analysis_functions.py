@@ -16,8 +16,8 @@ class AnalysisFunction(Enum):
     PAIRED_T_TEST = {"label": "Paired t-Test", "function": comparative_analysis.paired_t_test}
     UNPAIRED_T_TEST = {"label": "Unpaired t-Test", "function": comparative_analysis.unpaired_t_test}
     ANOVA_TEST = {"label": "ANOVA Test", "function": comparative_analysis.anova_test}
-    SPEARMAN_CORR = {"label": "Spearman Correlation", "function": comparative_analysis.perform_correlation_analysis}
-    PEARSON_CORR = {"label": "Pearson Correlation", "function": comparative_analysis.perform_correlation_analysis}
+    SPEARMAN_CORR = {"label": "Spearman Correlation", "function": comparative_analysis.perform_spearman_analysis}
+    PEARSON_CORR = {"label": "Pearson Correlation", "function": comparative_analysis.perform_pearson_analysis}
     WILCOXON_TEST = {"label": "Wilcoxon Test", "function": comparative_analysis.wilcoxon_test}
     CHI_SQUARE_TEST = {"label": "Chi-Square Test", "function": comparative_analysis.chi_square_test}
 
