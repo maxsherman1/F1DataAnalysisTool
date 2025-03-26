@@ -8,7 +8,7 @@ from sklearn.linear_model import LinearRegression
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-def simple_moving_average(df: pd.DataFrame, column: str, window: int) -> pd.Series:
+def simple_moving_average(df: pd.DataFrame, column: str, window: int = 10) -> pd.Series:
     if column not in df.columns:
         logging.error(f"Column {column} not found in DataFrame")
         raise KeyError(f"Column {column} not found in DataFrame")
@@ -21,7 +21,7 @@ def simple_moving_average(df: pd.DataFrame, column: str, window: int) -> pd.Seri
     return df[column].rolling(window=window).mean()
 
 
-def exponential_moving_average(df: pd.DataFrame, column: str, span: int) -> pd.Series:
+def exponential_moving_average(df: pd.DataFrame, column: str, span: int = 5) -> pd.Series:
     if column not in df.columns:
         logging.error(f"Column {column} not found in DataFrame")
         raise KeyError(f"Column {column} not found in DataFrame")
@@ -63,7 +63,7 @@ def linear_regression(df: pd.DataFrame, target_column: str, feature_columns: lis
     return model.predict(X).flatten()
 
 
-def arima_model(df: pd.DataFrame, column: str, order: tuple[int, int, int]) -> np.ndarray:
+def arima_model(df: pd.DataFrame, column: str, order: tuple[int, int, int] = (2, 1, 2)) -> np.ndarray:
     if column not in df.columns:
         logging.error(f"Column {column} not found in DataFrame")
         raise KeyError(f"Column {column} not found in DataFrame")
