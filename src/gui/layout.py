@@ -1,5 +1,6 @@
 from dash import dcc, html
 
+from enumeration.analysis_functions import AnalysisFunction
 from enumeration.plot_types import PlotType
 from enumeration.resource_types import ResourceType
 
@@ -74,7 +75,7 @@ def create_layout(app):
                 html.Div([
                     html.Div([
                         html.Label("Select Analysis Function:"),
-                        dcc.Dropdown(id="analysis_function", placeholder="Choose an analysis function..."),
+                        dcc.Dropdown(id="analysis_function", placeholder="Choose an analysis function...", options=[{'label': name, 'value': name} for name in AnalysisFunction.get_all_functions().keys()]),
 
                         html.Label("Select Column 1:", style={'display': 'block', 'margin-top': '10px'}),
                         dcc.Dropdown(id="column_1", placeholder="Select first column", clearable=True),
@@ -84,6 +85,15 @@ def create_layout(app):
 
                         html.Label("Additional Parameter (if required):", style={'display': 'block', 'margin-top': '10px'}),
                         dcc.Input(id="additional_param", type="text", placeholder="Enter additional parameter"),
+
+                        dcc.Checklist(
+                            id='convert_to_ms',
+                            options=[
+                                {'label': 'Convert to ms (when analysing time values)', 'value': 'convert'},
+                            ],
+                            value=[],
+                            style={'display': 'block', 'margin-top': '10px'}
+                        ),
 
                         html.Button("Analyze Data", id="analyze_button", n_clicks=0, style={'display': 'block', 'margin-top': '10px'}),
                     ], style={'flex': 1, 'padding': '10px'}),
