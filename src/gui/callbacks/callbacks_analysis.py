@@ -48,6 +48,7 @@ def register_analysis_callbacks(app):
         df = pd.read_json(stored_data, orient="split")
         if convert_to_ms == ["convert"]:
             df = dp.convert_to_ms(df)
+            df = dp.convert_to_numeric(df)
 
         try:
             # Call the run_analysis function and pass the required arguments
