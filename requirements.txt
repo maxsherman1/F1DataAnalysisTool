@@ -8,4 +8,3 @@ numpy==1.25.2             # Efficient numerical computations
 pytest==7.5.0             # Testing framework for unit and integration tests
 seaborn~=0.13.2
 dash~=2.18.2
-scikit-learn~=1.6.1
