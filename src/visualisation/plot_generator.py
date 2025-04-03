@@ -1,5 +1,4 @@
 import pandas as pd
-from api.jolpica_api import JolpicaAPI
 from visualisation.static_plot import plot_static_chart
 from visualisation.interactive_plot import plot_interactive_chart
 from visualisation.plot_saving import save_plot, get_plots_directory
