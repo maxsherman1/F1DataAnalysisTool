@@ -5,6 +5,8 @@ def get_inner_key_path(data: Dict[str, Any], resource_type: str) -> Optional[Lis
     # Resource type input filtering
     if resource_type.lower() == "qualifying":
         resource_type = "QualifyingResults"
+    elif resource_type.lower() == "sprint":
+        resource_type = "SprintResults"
     elif resource_type.lower() == "results":
         resource_type = "Races"
 
