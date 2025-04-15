@@ -99,25 +99,20 @@ def get_column_min_max(df: pd.DataFrame, column: str) -> Tuple[float, float] | T
     return None, None
 
 def convert_to_ms(df: pd.DataFrame, column: List = None) -> pd.DataFrame:
-    def time_to_ms(time_str):
-
-        if isinstance(time_str, (int, float)):
-            return time_str
-
-        time_parts = str(time_str).split(":")
-
-        if len(time_parts) == 2:
-            minutes, rest = time_parts
-            seconds_parts = rest.split(".")
-            if len(seconds_parts) == 2:
-                seconds, milliseconds = seconds_parts
-                return (int(minutes) * 60000) + (int(seconds) * 1000) + int(milliseconds)
-        if len(time_parts) == 1:
-            time_parts = str(time_str).split(".")
-            if len(time_parts) == 2:
-                seconds, milliseconds = time_parts
-                return (int(seconds) * 1000) + int(milliseconds)
-        return time_str
+    def time_to_ms(time):
+        try:
+            if isinstance(time, (int, float)):
+                return int(time * 1000)
+            if isinstance(time, str):
+                if ":" not in time:
+                    return int(float(time) * 1000)
+                time_parts = time.split(":")
+                if len(time_parts) == 2:
+                    minutes, rest = time_parts
+                    return (int(minutes) * 60000) + int(float(rest) * 1000)
+            return time
+        except (ValueError, TypeError):
+            logging.warning(f"Invalid time format: {time}")
 
     try:
         if column is None:
@@ -126,7 +121,7 @@ def convert_to_ms(df: pd.DataFrame, column: List = None) -> pd.DataFrame:
                     df[col] = df[col].apply(time_to_ms)
             logging.info("Time values converted to milliseconds in all time or duration columns.")
         else:
-            for col in get_columns(df):
+            for col in column:
                 df[col] = df[col].apply(time_to_ms)
     except Exception as e:
         logging.error(f"Error converting time to milliseconds: {e}")
