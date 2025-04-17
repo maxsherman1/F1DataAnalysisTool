@@ -1,5 +1,4 @@
 import pytest
-import pandas as pd
 from api.jolpica_api import JolpicaAPI
 from visualisation.plot_generator import plot_chart
 import matplotlib.figure
@@ -21,30 +20,17 @@ import plotly.graph_objs as go
 def test_plot_static_and_interactive(resource, filters, x_col, y_col, hue, plot_kind):
     df = JolpicaAPI(resource_type=resource, filters=filters).get_cleaned_data()
 
-    static_fig = plot_chart(df, x_col=x_col, y_col=y_col, title=f"Static {plot_kind} plot", plot_type=("static", plot_kind))
-    interactive_fig = plot_chart(df, x_col=x_col, y_col=y_col, title=f"Interactive {plot_kind} plot", plot_type=("interactive", plot_kind))
+    static_fig = plot_chart(df, x_col=x_col, y_col=y_col, title=f"Static {plot_kind} plot", plot_type=("static", plot_kind), saving=True)
+    interactive_fig = plot_chart(df, x_col=x_col, y_col=y_col, title=f"Interactive {plot_kind} plot", plot_type=("interactive", plot_kind), saving=True)
 
     assert isinstance(static_fig, matplotlib.figure.Figure)
     assert isinstance(interactive_fig, go.Figure)
 
 def test_laps_position_plot():
     df = JolpicaAPI(resource_type="laps", filters={"season": "2023", "round": "18"}).get_cleaned_data()
-    lap_data = []
-    for i in range(1, int((len(df.columns) - 1) / 3)):
-        driver_col = f"Timings.{i}.driverId"
-        position_col = f"Timings.{i}.position"
-        if driver_col in df.columns and position_col in df.columns:
-            for lap in range(len(df)):
-                lap_data.append({
-                    "lap": df.loc[lap, "number"],
-                    "driver": df.loc[lap, driver_col],
-                    "position": df.loc[lap, position_col]
-                })
-    df_clean = pd.DataFrame(lap_data)
-    df_clean.sort_values(by=["driver", "lap"], inplace=True)
 
-    static_fig = plot_chart(df_clean, x_col="lap", y_col="position", title="Static Position per Lap", hue="driver", plot_type=("static", "line"), flip_axis=["y"])
-    interactive_fig = plot_chart(df_clean, x_col="lap", y_col="position", title="Interactive Position per Lap", hue="driver", plot_type=("interactive", "line"), flip_axis=["y"])
+    static_fig = plot_chart(df, x_col="number", y_col="Timings.position", title="Static Position per Lap", hue="Timings.driverId", plot_type=("static", "line"), flip_axis=["y"], saving=True)
+    interactive_fig = plot_chart(df, x_col="number", y_col="Timings.position", title="Interactive Position per Lap", hue="Timings.driverId", plot_type=("interactive", "line"), flip_axis=["y"], saving=True)
 
-    assert static_fig is not None
-    assert interactive_fig is not None
+    assert isinstance(static_fig, matplotlib.figure.Figure)
+    assert isinstance(interactive_fig, go.Figure)
