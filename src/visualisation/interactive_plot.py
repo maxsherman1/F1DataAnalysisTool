@@ -5,7 +5,7 @@ import pandas as pd
 def plot_interactive_chart(
         df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
         plot_type: str = "line", hue: str = None, flip_axis: list = None,
-        figsize: tuple = (700, 500), theme: str = "plotly_dark", **kwargs
+        figsize: tuple = (1500, 600), theme: str = None, **kwargs
 ):
     plot_function = PlotFunction.get_plot_function(plot_type=PlotType(plot_type), mode=PlotMode.INTERACTIVE)
 

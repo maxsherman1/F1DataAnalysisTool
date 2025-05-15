@@ -6,7 +6,7 @@ import pandas as pd
 def plot_static_chart(
         df: pd.DataFrame, x_col: str, y_col: str = None, title: str = "",
         plot_type: str = "line", hue: str = None, figsize: tuple[float, float] = (10, 5),
-        flip_axis: list = None, theme: str = "dark_background", **kwargs
+        flip_axis: list = None, theme: str = "default", **kwargs
 ):
     # Set theme and figure size
     plt.style.use(theme)
