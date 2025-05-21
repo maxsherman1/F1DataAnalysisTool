@@ -57,6 +57,15 @@ def create_layout(app):
                             style={'display': 'block', 'margin-top': '10px'}
                         ),
 
+                        dcc.Checklist(
+                            id='convert_to_ms',
+                            options=[
+                                {'label': 'Convert to ms (when visualising time values)', 'value': 'convert'},
+                            ],
+                            value=[],
+                            style={'display': 'block', 'margin-top': '10px'}
+                        ),
+
                         html.Button('Generate Plot', id='generate_plot', n_clicks=0, type='button', style={'display': 'block', 'margin-top': '10px'}),
                         dcc.Store(id="plot_figure", storage_type="memory"),
 

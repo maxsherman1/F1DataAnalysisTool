@@ -45,19 +45,24 @@ def register_plot_callbacks(app):
          State('x_axis', 'value'),
          State('y_axis', 'value'),
          State('group_by', 'value'),
-         State('flip_axis', 'value')]
+         State('flip_axis', 'value'),
+         State("convert_to_ms", "value")]
     )
-    def update_plot(n_clicks, stored_data, plot_mode, plot_type, x_col, y_col, group_by, flip_axis):
+    def update_plot(n_clicks, stored_data, plot_mode, plot_type, x_col, y_col, group_by, flip_axis, convert_to_ms):
         if n_clicks == 0 or not stored_data or not x_col:
             return dcc.Graph(), {}
 
         y_col = None if y_col == 'none' else y_col
         group_by = None if group_by == 'none' else group_by
 
-        data = pd.read_json(stored_data, orient='split')
+        df = pd.read_json(stored_data, orient='split')
+
+        if convert_to_ms == ["convert"]:
+            df = dp.convert_to_ms(df)
+            df = dp.convert_to_numeric(df)
 
         fig = plot_chart(
-            data, x_col, y_col,
+            df, x_col, y_col,
             title="F1 Data Analysis Plot",
             plot_type=(plot_mode, plot_type),
             hue=group_by,
