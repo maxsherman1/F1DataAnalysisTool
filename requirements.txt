@@ -2,11 +2,12 @@ requests==2.32.0         # For API interaction with Jolpica-F1
 pandas==2.1.2             # Data manipulation and preprocessing
 matplotlib==3.8.0         # Data visualization (static plots)
 seaborn==0.13.2           # Data visualization (static plots)
-plotly==5.15.0            # Data visualization (interactive plots)
+plotly==5.18.0            # Data visualization (interactive plots)
 scipy==1.11.2             # Statistical functions (comparative analysis)
 statsmodels==0.14.0       # Advanced statistical modeling
 scikit-learn==1.6.1       # Linear regression
 numpy==1.25.2             # Efficient numerical computations
-dash==2.18.2              # GUI framework
-Flask==3.0.3              # Micro web framework
+dash==2.14.2              # GUI framework
+Flask==3.0.2              # Micro web framework
 pytest==8.3.3             # Python tetsing framework
+gunicorn==21.2.0          # Web server gateway interface

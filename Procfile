@@ -1,0 +1,1 @@
+web: gunicorn src.gui.main:server 
