@@ -1,1 +1,1 @@
-web: gunicorn src.gui.main:server 
+web: gunicorn src.f1dataanalysistool.main:server 
