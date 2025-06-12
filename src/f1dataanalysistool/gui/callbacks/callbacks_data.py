@@ -1,8 +1,8 @@
 import logging
 from dash.dependencies import Input, Output, State, ALL
 from dash import dcc, html
-from enumeration.resource_types import ResourceType
-from api.jolpica_api import JolpicaAPI
+from f1dataanalysistool.enumeration.resource_types import ResourceType
+from f1dataanalysistool.api.jolpica_api import JolpicaAPI
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

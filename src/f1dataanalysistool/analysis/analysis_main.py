@@ -1,4 +1,4 @@
-from enumeration.analysis_functions import AnalysisFunction
+from f1dataanalysistool.enumeration.analysis_functions import AnalysisFunction
 
 def run_analysis(df, analysis_type, column_1, column_2, additional_param):
     try:

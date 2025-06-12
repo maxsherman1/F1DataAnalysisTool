@@ -1,7 +1,7 @@
 import pandas as pd
-from visualisation.static_plot import plot_static_chart
-from visualisation.interactive_plot import plot_interactive_chart
-from visualisation.plot_saving import save_plot, get_plots_directory
+from f1dataanalysistool.visualisation.static_plot import plot_static_chart
+from f1dataanalysistool.visualisation.interactive_plot import plot_interactive_chart
+from f1dataanalysistool.visualisation.plot_saving import save_plot, get_plots_directory
 
 def generate_filename(mode: str, chart_type: str, x_col: str, y_col: str, title: str) -> str:
     filename = f"{mode}_{chart_type}_{x_col.replace('.', '_')}{'_' + y_col.replace('.', '_') if y_col else ''}_{title.replace(' ', '_')}"

@@ -2,8 +2,8 @@ import logging
 from dash.dependencies import Input, Output, State
 from dash import html
 import pandas as pd
-import api.data_preprocessing as dp
-from analysis.analysis_main import run_analysis
+import f1dataanalysistool.api.data_preprocessing as dp
+from f1dataanalysistool.analysis.analysis_main import run_analysis
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

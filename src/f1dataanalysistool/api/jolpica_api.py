@@ -1,12 +1,12 @@
 import logging
 import requests
-import api.cache_manager as cache_manager
-import api.json_handler as json_handler
-import api.data_preprocessing as dp
 import pandas as pd
 from typing import Dict, Any, List, Optional
 from pathlib import Path
-from enumeration.resource_types import ResourceType
+import f1dataanalysistool.api.cache_manager as cache_manager
+import f1dataanalysistool.api.json_handler as json_handler
+import f1dataanalysistool.api.data_preprocessing as dp
+from f1dataanalysistool.enumeration.resource_types import ResourceType
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

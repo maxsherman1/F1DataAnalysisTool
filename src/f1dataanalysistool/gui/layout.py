@@ -1,8 +1,7 @@
 from dash import dcc, html
-
-from enumeration.analysis_functions import AnalysisFunction
-from enumeration.plot_types import PlotType
-from enumeration.resource_types import ResourceType
+from f1dataanalysistool.enumeration.analysis_functions import AnalysisFunction
+from f1dataanalysistool.enumeration.plot_types import PlotType
+from f1dataanalysistool.enumeration.resource_types import ResourceType
 
 def create_layout(app):
     return html.Div([

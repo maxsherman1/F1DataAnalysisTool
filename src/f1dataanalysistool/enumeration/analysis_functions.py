@@ -1,7 +1,7 @@
 from enum import Enum
-import analysis.descriptive_analysis as descriptive_analysis
-import analysis.comparative_analysis as comparative_analysis
-import analysis.trend_analysis as trend_analysis
+import f1dataanalysistool.analysis.descriptive_analysis as descriptive_analysis
+import f1dataanalysistool.analysis.comparative_analysis as comparative_analysis
+import f1dataanalysistool.analysis.trend_analysis as trend_analysis
 
 
 class AnalysisFunction(Enum):

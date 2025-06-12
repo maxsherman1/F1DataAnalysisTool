@@ -1,4 +1,4 @@
-import api.data_preprocessing as dp
+import f1dataanalysistool.api.data_preprocessing as dp
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import pandas as pd

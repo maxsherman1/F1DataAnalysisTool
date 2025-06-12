@@ -1,5 +1,5 @@
-from visualisation.plot_utils import format_label, apply_axis_flip, configure_axis_ticks
-from enumeration.plot_types import PlotMode, PlotType, PlotFunction
+from f1dataanalysistool.visualisation.plot_utils import format_label, apply_axis_flip, configure_axis_ticks
+from f1dataanalysistool.enumeration.plot_types import PlotMode, PlotType, PlotFunction
 import pandas as pd
 
 def plot_interactive_chart(

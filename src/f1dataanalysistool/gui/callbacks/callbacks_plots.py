@@ -4,9 +4,9 @@ import os
 from dash.dependencies import Input, Output, State
 from dash import dcc, html
 import pandas as pd
-import api.data_preprocessing as dp
-from visualisation.plot_generator import plot_chart
-from visualisation.plot_saving import get_plots_directory, save_plot
+import f1dataanalysistool.api.data_preprocessing as dp
+from f1dataanalysistool.visualisation.plot_generator import plot_chart
+from f1dataanalysistool.visualisation.plot_saving import get_plots_directory, save_plot
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
